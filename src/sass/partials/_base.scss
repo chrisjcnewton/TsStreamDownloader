@@ -1,0 +1,82 @@
+/*
+@font-face {
+  font-family: "Frutiger-Black-Cn";
+  src: url("../fonts/FrutigerLTStd-BlackCn.otf");
+}
+@font-face {
+  font-family: "Frutiger-Bold";
+  src: url("../fonts/FrutigerLTStd-Bold.otf");
+}
+@font-face {
+  font-family: "Frutiger-Light";
+  src: url("../fonts/FrutigerLTStd-Light.otf");
+}
+@font-face {
+  font-family: "Frutiger-Light-Cn";
+  src: url("../fonts/FrutigerLTStd-LightCn.otf");
+}
+@font-face {
+  font-family: "Frutiger-Roman";
+  src: url("../fonts/FrutigerLTStd-Roman.otf");
+}
+*/
+
+@-webkit-keyframes animate-stripes {
+ 100% { background-position: -25px 0px; }
+}
+
+
+
+*{
+  -webkit-font-smoothing: antialiased;
+}
+
+body{
+  overflow-x:hidden;
+}
+
+button{
+  padding:0;
+}
+
+.viewContent{
+  width:100%;
+  height:100%;
+  position:absolute;
+  margin:auto;
+  top:0;
+  left:0;
+  bottom:0;
+  right:0;
+  transition:transform 0.5s ease-in-out, background-color 0.1s ease-in-out;
+  z-index:-1;
+
+
+}
+// Indeterminate Progress Bar Styles
+progress:not([value]){
+  width:200px;
+  height:4px;
+  background-color:rgba(255,255,255,0.5 );
+  background-image:  linear-gradient( -45deg, rgba(212, 5, 17, 1) 25%, transparent 25%, transparent 50%, rgba(212, 5, 17, 1) 50%, rgba(212, 5, 17, 1) 75%, transparent 75%, transparent );
+  background-size: 25px 25px;
+  -webkit-animation: animate-stripes 0.5s linear infinite;
+}
+progress:not([value])::-webkit-progress-bar{
+  background-color:transparent;
+}
+
+// Progress Bar Styles
+
+progress[value]{
+  -webkit-appearance:none;
+  height:4px;
+}
+
+progress[value]::-webkit-progress-bar {
+  background-color:rgba(255,255,255,0.5 );
+}
+
+progress[value]::-webkit-progress-value {
+  background-color:red;
+}

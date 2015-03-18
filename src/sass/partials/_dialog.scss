@@ -1,0 +1,77 @@
+.dialog{
+  width:27em;
+  height:15em;
+  background-color:rgba(255,255,255,0.95);
+  position:absolute;
+  margin:auto;
+  top:0;
+  left:0;
+  bottom:0;
+  right:0;
+  font-family: "Frutiger-Light-Cn";
+
+  .dialogInner{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    width:100%;
+  }
+
+  p{
+    //padding: 2em 2em 0 2em;
+    font-size:1.2em;
+    //min-height:3em;
+    text-align:center;
+    padding-bottom:1em;
+  }
+
+  button{
+    min-width: 6em;
+    height:2.2em;
+    margin:10px 10px 10px 0;
+    display:none;
+    border:none;
+    background-color:red;
+    color:white;
+    cursor:pointer;
+    font-family: "Frutiger-Light-Cn";
+    font-size:1em;
+    text-transform:uppercase;
+  }
+
+  .buttonsBar{
+    margin:0 auto;
+    display:table;
+  }
+
+  .progressArea{
+    //height:30px;
+    display:none;
+    padding:0 1.5em;
+
+    progress[value], progress:not([value]){
+      width: 100%;
+    }
+
+
+
+    .dialogProgressCopy{
+      margin:0.5em 0 1em 0;
+    }
+    .progressResumePauseButton{
+      //margin-left:1.5em;
+
+    }
+  }
+
+  .isVisible{
+    display:initial;
+  }
+
+  .progressArea.isVisible{
+    display:block;
+  }
+
+
+}
