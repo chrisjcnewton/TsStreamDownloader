@@ -1,4 +1,4 @@
-var FileDownloader = FileDownloader || function(remoteFileUrl, targetFilePath, downloadingCallBack, onCompleteCallback, onErrorCallback){
+var FileDownloader = FileDownloader || function(urlObj, targetFilePath, downloadingCallBack, onCompleteCallback, onErrorCallback){
 
   var request = require('request');
   var fs = require('fs');
@@ -13,6 +13,7 @@ var FileDownloader = FileDownloader || function(remoteFileUrl, targetFilePath, d
   var nothingToDownload = false;
   var dppError = false;
   var dppErrorBody = "";
+  var isRedirect = false;
 
   fs.stat(targetFilePath, function(err, stats){
     if(err){
@@ -27,12 +28,13 @@ var FileDownloader = FileDownloader || function(remoteFileUrl, targetFilePath, d
     }
   });
 
-  console.log("url = "+remoteFileUrl);
+  console.log("url = "+urlObj.mediaurl);
 
 
   function makeFileRequest(){
-    theDownloadedFile.remoteUrl = remoteFileUrl;
-    var theUrl = remoteFileUrl;
+    theDownloadedFile.urlObj = urlObj;
+    var theUrl = urlObj.mediaurl;
+  //  var theUrl = "http://192.168.1.69:9000/web/media/122.TS";
     req = request({
         method: 'GET',
         uri: theUrl,
@@ -47,10 +49,18 @@ var FileDownloader = FileDownloader || function(remoteFileUrl, targetFilePath, d
         console.log(data);
         var contentType = data.headers['content-type'];
         console.log(contentType);
-        if((contentType != "application/octet-stream" || contentType != "application/zip") && contentType == "text/html"){
-          dppError = true;
+
+        if(contentType == "text/plain" && data.headers['refresh'] != null){
+          urlObj.mediaurl = (data.headers['refresh']).split('=')[1];
+          isRedirect = true;
+          req.abort();
+          makeFileRequest();
+          return;
         }
-        len = parseInt(data.headers['content-length'], 10);
+        //len = parseInt(data.headers['content-length'], 10);
+
+        len = parseInt( (data.headers['content-range']).split('/')[1], 10);
+        console.log(len);
         cur = 0;
         total = len / BYTES_IN_MEGABYTE;
         if(isNaN(len)){
@@ -68,7 +78,7 @@ var FileDownloader = FileDownloader || function(remoteFileUrl, targetFilePath, d
           var totalAmountDownloaded = (amountPreviouslyDownloaded === 0)? amountDownloaded : (amountPreviouslyDownloaded / BYTES_IN_MEGABYTE) + amountDownloaded;
           var totalAmount = (amountPreviouslyDownloaded === 0)? total : (amountPreviouslyDownloaded / BYTES_IN_MEGABYTE) + total;
 
-          downloadingCallBack(Math.floor(totalAmountDownloaded), Math.floor(totalAmount), remoteFileUrl);
+          downloadingCallBack(Math.floor(totalAmountDownloaded), Math.floor(totalAmount), urlObj.title);
         }else{
           dppErrorBody += chunk;
         }
@@ -77,6 +87,7 @@ var FileDownloader = FileDownloader || function(remoteFileUrl, targetFilePath, d
 
     req.on('end', function()
     {
+        if(isRedirect) return;
         var error = null;
         if(nothingToDownload){
           console.log("FileDownloader: File already Downloaded");

@@ -6,8 +6,8 @@ var App = App || (function(){
   var gui = require('nw.gui');
   var algorithm = 'aes-256-ctr';
 
-  var serverUrl = "http://localhost:8888/DLNA-SERVER/endpoint.html";
-
+  //var serverUrl = "http://localhost:8888/DLNA-SERVER/endpoint.html";
+  var serverUrl = "http://192.168.1.69/browse/index.jim";
 
   var viewControllerArray = [];
 
@@ -439,7 +439,7 @@ var AppUpdater = AppUpdater || function(options){
   }
 };
 
-var FileDownloader = FileDownloader || function(remoteFileUrl, targetFilePath, downloadingCallBack, onCompleteCallback, onErrorCallback){
+var FileDownloader = FileDownloader || function(urlObj, targetFilePath, downloadingCallBack, onCompleteCallback, onErrorCallback){
 
   var request = require('request');
   var fs = require('fs');
@@ -454,6 +454,7 @@ var FileDownloader = FileDownloader || function(remoteFileUrl, targetFilePath, d
   var nothingToDownload = false;
   var dppError = false;
   var dppErrorBody = "";
+  var isRedirect = false;
 
   fs.stat(targetFilePath, function(err, stats){
     if(err){
@@ -468,12 +469,13 @@ var FileDownloader = FileDownloader || function(remoteFileUrl, targetFilePath, d
     }
   });
 
-  console.log("url = "+remoteFileUrl);
+  console.log("url = "+urlObj.mediaurl);
 
 
   function makeFileRequest(){
-    theDownloadedFile.remoteUrl = remoteFileUrl;
-    var theUrl = remoteFileUrl;
+    theDownloadedFile.urlObj = urlObj;
+    var theUrl = urlObj.mediaurl;
+  //  var theUrl = "http://192.168.1.69:9000/web/media/122.TS";
     req = request({
         method: 'GET',
         uri: theUrl,
@@ -488,10 +490,18 @@ var FileDownloader = FileDownloader || function(remoteFileUrl, targetFilePath, d
         console.log(data);
         var contentType = data.headers['content-type'];
         console.log(contentType);
-        if((contentType != "application/octet-stream" || contentType != "application/zip") && contentType == "text/html"){
-          dppError = true;
+
+        if(contentType == "text/plain" && data.headers['refresh'] != null){
+          urlObj.mediaurl = (data.headers['refresh']).split('=')[1];
+          isRedirect = true;
+          req.abort();
+          makeFileRequest();
+          return;
         }
-        len = parseInt(data.headers['content-length'], 10);
+        //len = parseInt(data.headers['content-length'], 10);
+
+        len = parseInt( (data.headers['content-range']).split('/')[1], 10);
+        console.log(len);
         cur = 0;
         total = len / BYTES_IN_MEGABYTE;
         if(isNaN(len)){
@@ -509,7 +519,7 @@ var FileDownloader = FileDownloader || function(remoteFileUrl, targetFilePath, d
           var totalAmountDownloaded = (amountPreviouslyDownloaded === 0)? amountDownloaded : (amountPreviouslyDownloaded / BYTES_IN_MEGABYTE) + amountDownloaded;
           var totalAmount = (amountPreviouslyDownloaded === 0)? total : (amountPreviouslyDownloaded / BYTES_IN_MEGABYTE) + total;
 
-          downloadingCallBack(Math.floor(totalAmountDownloaded), Math.floor(totalAmount), remoteFileUrl);
+          downloadingCallBack(Math.floor(totalAmountDownloaded), Math.floor(totalAmount), urlObj.title);
         }else{
           dppErrorBody += chunk;
         }
@@ -518,6 +528,7 @@ var FileDownloader = FileDownloader || function(remoteFileUrl, targetFilePath, d
 
     req.on('end', function()
     {
+        if(isRedirect) return;
         var error = null;
         if(nothingToDownload){
           console.log("FileDownloader: File already Downloaded");
@@ -1229,15 +1240,33 @@ var DownloadViewController = DownloadViewController || function(){
 
         var parser = new DOMParser();
         var viewContentHTML = parser.parseFromString(response.body, "text/html");
-        var viewContent = viewContentHTML.body.children[0];
-      //console.log(viewContent);
-        var dlnaElems = viewContent.querySelectorAll('.entry');
+        var viewContent = viewContentHTML.body;
+    //  console.log(viewContent);
+        var dlnaElems = viewContent.querySelectorAll('fieldset.cleft div.va.bf');
+        //console.log(dlnaElems);
+
         var dlnaElemsJsonObj = {};
         dlnaElemsJsonObj.urls = [];
+
+      //  console.log(dlnaElems[]);
+
         for(var i=0; i< dlnaElems.length; i++){
-          dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaElems[i].innerHTML} );
+
+          var mediaLink = dlnaElems[i].querySelector('a.bf');
+          //console.log(mediaLink.getAttribute('file'));
+
+          var desc = mediaLink.title;
+          var mediaUrl = mediaLink.getAttribute('file');
+          var title = decodeURI(mediaUrl.split('/')[3]);
+          var dlnaUrl = "http://192.168.1.69/browse/download.jim?file="+mediaUrl+"&base=192.168.1.69";
+          dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaUrl,
+                                        "title":title,
+                                        "desc":desc} );
         }
+        console.log(dlnaElemsJsonObj);
         callback(null, dlnaElemsJsonObj);
+
+
         //console.log("dlnaElemsJsonObj ",dlnaElemsJsonObj);
         //console.log(JSON.stringify(dlnaElemsJsonObj));
 
@@ -1256,12 +1285,13 @@ var DownloadViewController = DownloadViewController || function(){
 
   var _downloadMediaFiles = function(downloadArr){
 
-    for(var i=0; i< downloadArr.length; i++){
+    //for(var i=0; i< downloadArr.length; i++){
+    for(var i=5; i< 6; i++){
 
-      var fileName = downloadArr[i].mediaurl.split('/')[4];
+      var fileName = downloadArr[i].title;
 
       var mediaElement = document.createElement('li');
-      mediaElement.mediaurl = downloadArr[i].mediaurl;
+      mediaElement.urlObj = downloadArr[i];
 
       var mediaLabel = document.createElement('p');
       mediaLabel.innerHTML = fileName;
@@ -1272,7 +1302,7 @@ var DownloadViewController = DownloadViewController || function(){
       mediaElement.appendChild(mediaProgress);
       mediaList.appendChild(mediaElement);
 
-      new FileDownloader(downloadArr[i].mediaurl,  appDataPath+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
+      new FileDownloader(downloadArr[i],  appDataPath+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
     }
   };
 
@@ -1280,12 +1310,12 @@ var DownloadViewController = DownloadViewController || function(){
     console.log("Download Error ",error);
   }
 
-  var _onFileDownloadProgress = function(amountDownloaded, totalAmount, remoteUrl){
+  var _onFileDownloadProgress = function(amountDownloaded, totalAmount, mediaTitle){
     var updateCopy = amountDownloaded+"mb / "+totalAmount+"mb";
     var percentageDownLoaded = (amountDownloaded / totalAmount) * 100;
 
     for(var i=0; i<mediaList.children.length; i++){
-      if(mediaList.children[i].mediaurl === remoteUrl){
+      if(mediaList.children[i].urlObj.title === mediaTitle){
         mediaList.children[i].children[1].value = percentageDownLoaded;
       }
     }
@@ -1308,8 +1338,11 @@ var DownloadViewController = DownloadViewController || function(){
         currentJsonUrlObj.urls = [];
       }
 
+      currentJsonUrlObj.urls.push( {"mediaurl":downloadedFile.mediaurl,
+                                    "title":downloadedFile.title,
+                                    "desc":downloadedFile.desc} );
 
-      currentJsonUrlObj.urls.push( {"mediaurl":downloadedFile.remoteUrl} );
+      //currentJsonUrlObj.urls.push( {"mediaurl":downloadedFile.remoteUrl} );
 
       _writeJsonToDisk(currentJsonUrlObj);
 

@@ -6,8 +6,8 @@ var App = App || (function(){
   var gui = require('nw.gui');
   var algorithm = 'aes-256-ctr';
 
-  var serverUrl = "http://localhost:8888/DLNA-SERVER/endpoint.html";
-
+  //var serverUrl = "http://localhost:8888/DLNA-SERVER/endpoint.html";
+  var serverUrl = "http://192.168.1.69/browse/index.jim";
 
   var viewControllerArray = [];
 

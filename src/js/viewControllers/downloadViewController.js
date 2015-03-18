@@ -110,15 +110,33 @@ var DownloadViewController = DownloadViewController || function(){
 
         var parser = new DOMParser();
         var viewContentHTML = parser.parseFromString(response.body, "text/html");
-        var viewContent = viewContentHTML.body.children[0];
-      //console.log(viewContent);
-        var dlnaElems = viewContent.querySelectorAll('.entry');
+        var viewContent = viewContentHTML.body;
+    //  console.log(viewContent);
+        var dlnaElems = viewContent.querySelectorAll('fieldset.cleft div.va.bf');
+        //console.log(dlnaElems);
+
         var dlnaElemsJsonObj = {};
         dlnaElemsJsonObj.urls = [];
+
+      //  console.log(dlnaElems[]);
+
         for(var i=0; i< dlnaElems.length; i++){
-          dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaElems[i].innerHTML} );
+
+          var mediaLink = dlnaElems[i].querySelector('a.bf');
+          //console.log(mediaLink.getAttribute('file'));
+
+          var desc = mediaLink.title;
+          var mediaUrl = mediaLink.getAttribute('file');
+          var title = decodeURI(mediaUrl.split('/')[3]);
+          var dlnaUrl = "http://192.168.1.69/browse/download.jim?file="+mediaUrl+"&base=192.168.1.69";
+          dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaUrl,
+                                        "title":title,
+                                        "desc":desc} );
         }
+        console.log(dlnaElemsJsonObj);
         callback(null, dlnaElemsJsonObj);
+
+
         //console.log("dlnaElemsJsonObj ",dlnaElemsJsonObj);
         //console.log(JSON.stringify(dlnaElemsJsonObj));
 
@@ -137,12 +155,13 @@ var DownloadViewController = DownloadViewController || function(){
 
   var _downloadMediaFiles = function(downloadArr){
 
-    for(var i=0; i< downloadArr.length; i++){
+    //for(var i=0; i< downloadArr.length; i++){
+    for(var i=5; i< 6; i++){
 
-      var fileName = downloadArr[i].mediaurl.split('/')[4];
+      var fileName = downloadArr[i].title;
 
       var mediaElement = document.createElement('li');
-      mediaElement.mediaurl = downloadArr[i].mediaurl;
+      mediaElement.urlObj = downloadArr[i];
 
       var mediaLabel = document.createElement('p');
       mediaLabel.innerHTML = fileName;
@@ -153,7 +172,7 @@ var DownloadViewController = DownloadViewController || function(){
       mediaElement.appendChild(mediaProgress);
       mediaList.appendChild(mediaElement);
 
-      new FileDownloader(downloadArr[i].mediaurl,  appDataPath+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
+      new FileDownloader(downloadArr[i],  appDataPath+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
     }
   };
 
@@ -161,12 +180,12 @@ var DownloadViewController = DownloadViewController || function(){
     console.log("Download Error ",error);
   }
 
-  var _onFileDownloadProgress = function(amountDownloaded, totalAmount, remoteUrl){
+  var _onFileDownloadProgress = function(amountDownloaded, totalAmount, mediaTitle){
     var updateCopy = amountDownloaded+"mb / "+totalAmount+"mb";
     var percentageDownLoaded = (amountDownloaded / totalAmount) * 100;
 
     for(var i=0; i<mediaList.children.length; i++){
-      if(mediaList.children[i].mediaurl === remoteUrl){
+      if(mediaList.children[i].urlObj.title === mediaTitle){
         mediaList.children[i].children[1].value = percentageDownLoaded;
       }
     }
@@ -189,8 +208,11 @@ var DownloadViewController = DownloadViewController || function(){
         currentJsonUrlObj.urls = [];
       }
 
+      currentJsonUrlObj.urls.push( {"mediaurl":downloadedFile.mediaurl,
+                                    "title":downloadedFile.title,
+                                    "desc":downloadedFile.desc} );
 
-      currentJsonUrlObj.urls.push( {"mediaurl":downloadedFile.remoteUrl} );
+      //currentJsonUrlObj.urls.push( {"mediaurl":downloadedFile.remoteUrl} );
 
       _writeJsonToDisk(currentJsonUrlObj);
 
