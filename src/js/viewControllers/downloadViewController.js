@@ -13,12 +13,13 @@ var DownloadViewController = DownloadViewController || function(){
   var urlJsonName = "urls.json";
 
   var currentJsonUrlObj;
+  var mediaList;
 
 
   var create = function(extras){
     previousViewControllerName = extras? extras.previousViewControllerName : null;
 
-
+    mediaList = document.querySelector('#mediaList');
     _getCurrentUrls();
 
   };
@@ -47,6 +48,7 @@ var DownloadViewController = DownloadViewController || function(){
               _compareJSON(localUrlArr, remoteUrlArr, function(downloadArray, deleteArray){
                 if(downloadArray.length == 0 && deleteArray.length == 0){
                   console.log("No Changes on Server");
+                  mediaList.innerHTML = "No Changes on Server";
                 }
                 else{
                   if(deleteArray.length > 0){
@@ -136,7 +138,21 @@ var DownloadViewController = DownloadViewController || function(){
   var _downloadMediaFiles = function(downloadArr){
 
     for(var i=0; i< downloadArr.length; i++){
+
       var fileName = downloadArr[i].mediaurl.split('/')[4];
+
+      var mediaElement = document.createElement('li');
+      mediaElement.mediaurl = downloadArr[i].mediaurl;
+
+      var mediaLabel = document.createElement('p');
+      mediaLabel.innerHTML = fileName;
+      var mediaProgress = document.createElement('progress');
+      mediaProgress.max = "100";
+      mediaProgress.value = "0";
+      mediaElement.appendChild(mediaLabel);
+      mediaElement.appendChild(mediaProgress);
+      mediaList.appendChild(mediaElement);
+
       new FileDownloader(downloadArr[i].mediaurl,  appDataPath+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
     }
   };
@@ -145,11 +161,17 @@ var DownloadViewController = DownloadViewController || function(){
     console.log("Download Error ",error);
   }
 
-  var _onFileDownloadProgress = function(amountDownloaded, totalAmount){
+  var _onFileDownloadProgress = function(amountDownloaded, totalAmount, remoteUrl){
     var updateCopy = amountDownloaded+"mb / "+totalAmount+"mb";
     var percentageDownLoaded = (amountDownloaded / totalAmount) * 100;
 
-    console.log(updateCopy + "  "+ percentageDownLoaded+"%");
+    for(var i=0; i<mediaList.children.length; i++){
+      if(mediaList.children[i].mediaurl === remoteUrl){
+        mediaList.children[i].children[1].value = percentageDownLoaded;
+      }
+    }
+
+    //console.log(updateCopy + "  "+ percentageDownLoaded+"%");
 
   }
 

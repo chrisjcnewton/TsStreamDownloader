@@ -68,7 +68,7 @@ var FileDownloader = FileDownloader || function(remoteFileUrl, targetFilePath, d
           var totalAmountDownloaded = (amountPreviouslyDownloaded === 0)? amountDownloaded : (amountPreviouslyDownloaded / BYTES_IN_MEGABYTE) + amountDownloaded;
           var totalAmount = (amountPreviouslyDownloaded === 0)? total : (amountPreviouslyDownloaded / BYTES_IN_MEGABYTE) + total;
 
-          downloadingCallBack(Math.floor(totalAmountDownloaded), Math.floor(totalAmount));
+          downloadingCallBack(Math.floor(totalAmountDownloaded), Math.floor(totalAmount), remoteFileUrl);
         }else{
           dppErrorBody += chunk;
         }
