@@ -7,7 +7,9 @@ var App = App || (function(){
   var algorithm = 'aes-256-ctr';
 
   //var serverUrl = "http://localhost:8888/DLNA-SERVER/endpoint.html";
-  var serverUrl = "http://192.168.1.69/browse/index.jim";
+  var serverUrl = "http://192.168.1.69/";
+  var downloadFolder = "/Users/cnewton/Movies/";
+  var mediaFolder = "";
 
   var viewControllerArray = [];
 
@@ -153,6 +155,7 @@ var App = App || (function(){
 
   return{
     serverUrl:serverUrl,
+    downloadFolder:downloadFolder,
     isNetworkConnected:isNetworkConnected,
     startViewController:startViewController,
     getItemFromStorage:getItemFromStorage,
@@ -205,240 +208,6 @@ menubar.append(new gui.MenuItem({ label: 'File', submenu: fileMenu}));
 //assign the menubar to window menu
 win.menu = menubar;
 
-var AppUpdater = AppUpdater || function(options){
-
-  var request = require('request');
-  var fs = require('fs');
-  var semver = require('semver');
-  var ncp = require('ncp').ncp;
-  var gui = require('nw.gui');
-  var rimraf = require('rimraf');
-  var mkdirp = require('mkdirp');
-
-  var UPDATE_ZIP_NAME = options.zipName;
-  var UPDATE_FOLDER_NAME = options.srcFolderName;
-  var UPDATE_DEST_FOLDER_NAME = options.destFolderName;
-  var appDataPath = gui.App.dataPath + "/";
-
-  var NO_UPDATE = "No Update Available";
-  var UPDATE_AVAILABLE = "Update Available";
-  var UPDATE_SUCCESSFUL = "Update Successful";
-
-  var dialog;
-  var updateCallback;
-  var fileDownloadTask;
-  var downloadStarted = false;
-  var downloadErrorOccurred = false;
-  var zipErrorOccurred = false;
-  var updateAppliedSuccessfully = false;
-  var isAppUpdate = false;
-  var appUpdateRemoteJson;
-
-  var checkForAppUpdate = function(callback){
-    updateCallback = callback;
-    var currentVersion = gui.App.manifest.version;
-    var updateUrl = gui.App.manifest.updateUrl;
-
-    request(updateUrl, function (error, response, data) {
-      if (!error && response.statusCode == 200) {
-        appUpdateRemoteJson = JSON.parse(data);
-        if(semver.gt(appUpdateRemoteJson.version, currentVersion)){
-          updateCallback(UPDATE_AVAILABLE, null);
-        }else{
-          updateCallback(NO_UPDATE, null);
-        }
-      }else if(error){
-        updateCallback(null, error);
-        //console.log("Error Connecting to Server = "+error);
-      }
-
-    });
-  };
-
-  var downloadAppUpdate = function(){
-    isAppUpdate = true;
-    _launchDownloadDialog(appUpdateRemoteJson.updateContentsZip, "The Knowledge Version "+appUpdateRemoteJson.version+" is available.<br>Would you like to update the App?", true);
-  };
-
-  var downloadContentUpdate = function(updateUrl, message, callback){
-    isAppUpdate = false;
-    updateCallback = callback;
-    _launchDownloadDialog(updateUrl, message, true);
-  };
-
-  var downloadInitialContent = function(updateUrl, message, callback){
-    isAppUpdate = false;
-    updateCallback = callback;
-    _launchDownloadDialog(updateUrl, message, false, "DOWNLOAD");
-  };
-
-  var _launchDownloadDialog = function(updateUrl, message, showCancelBut, theconfirmCopy){
-
-    dialog = new Dialog(message, {confirmCopy:theconfirmCopy? theconfirmCopy:"OK", cancelCopy:"Cancel", showConfirm:true, showCancel:showCancelBut,showProgress:false}, function(confirmed){
-
-      if((confirmed && !downloadStarted) || (confirmed && downloadStarted && downloadErrorOccurred)){
-          downloadStarted = true;
-          dialog.toggleProgress();
-          dialog.toggleConfirmButton();
-          dialog.updateMessage("DOWNLOADING CONTENT");
-          if(showCancelBut)dialog.toggleCancelButton();
-          if(fileDownloadTask) fileDownloadTask = null;
-          fileDownloadTask = new FileDownloader(updateUrl,  appDataPath + UPDATE_ZIP_NAME, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
-
-      }else if(confirmed && downloadStarted && !downloadErrorOccurred && !zipErrorOccurred && updateAppliedSuccessfully){
-        console.log("Restart App");
-        if(isAppUpdate){
-          gui.App.quit();
-        }else{
-          dialog.hide();
-          dialog = null;
-          updateCallback(UPDATE_SUCCESSFUL, null);
-        }
-      }
-      else if(!confirmed || (confirmed && zipErrorOccurred) ){
-        dialog.hide();
-        dialog = null;
-        updateCallback(NO_UPDATE, null);
-      }
-
-    }, function(isPaused){
-      // console.log("pauseClicked = "+pauseClicked);
-      if(isPaused){
-        // cancel the download
-        fileDownloadTask.cancel();
-      }else{
-        // start the download from where we left off
-        if(fileDownloadTask) fileDownloadTask = null;
-        fileDownloadTask = new FileDownloader(updateUrl,  appDataPath + UPDATE_ZIP_NAME, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
-      }
-    });
-  };
-
-  var _onFileDownloadError = function(error){
-    downloadErrorOccurred = true;
-    dialog.updateMessage("There was a problem downloading the update.<br>("+error.message+")<br>Would you like to try again?");
-    dialog.toggleProgress();
-    dialog.toggleCancelButton();
-    dialog.toggleConfirmButton();
-    dialog.updateConfirmCopy("Try Again");
-  }
-
-  var _onFileDownloadProgress = function(amountDownloaded, totalAmount){
-    var updateCopy = amountDownloaded+"mb / "+totalAmount+"mb";
-    dialog.updateProgressMessage(updateCopy);
-    var percentageDownLoaded = (amountDownloaded / totalAmount) * 100;
-    dialog.updateProgress(percentageDownLoaded);
-  }
-
-  var _onFileDownloaded = function(downloadedFile, error){
-    console.log(error);
-    if((error && error.message != 'paused') ){
-      downloadErrorOccurred = true;
-      dialog.toggleProgress();
-      dialog.toggleCancelButton();
-      dialog.updateMessage(error.message);
-    }else if(error && error.message == 'paused'){
-      return;
-    }
-    else{
-      downloadErrorOccurred = false;
-      dialog.updateProgress("indeterminate");
-      dialog.updateProgressMessage("");
-      dialog.updateMessage("UNZIPPING CONTENT");
-      dialog.toggleResumePauseButton();
-
-
-
-      fs.exists(appDataPath + UPDATE_FOLDER_NAME, function (exists) {
-        if(!exists) fs.mkdirSync(appDataPath + UPDATE_FOLDER_NAME);
-
-        new UnzipFile(downloadedFile.path, appDataPath + UPDATE_FOLDER_NAME, _onFilesUnzipped, function(error){
-          zipErrorOccurred = true;
-          dialog.updateMessage("There was a problem unzipping the update.<br>("+error.message+")<br>Please try again later");
-          dialog.toggleProgress();
-          dialog.toggleConfirmButton();
-
-          // Delete the zip file
-          fs.unlink(appDataPath + UPDATE_ZIP_NAME, function (err) {
-            if (err) throw err;
-            console.log('successfully deleted zip');
-          });
-
-        });
-      });
-
-
-    }
-  }
-
-  var _onFilesUnzipped = function(){
-    console.log('====== _onFilesUnzipped called');
-
-    ncp.limit = 16;
-
-    fs.exists(UPDATE_DEST_FOLDER_NAME, function (exists) {
-      if(!exists) mkdirp.sync(UPDATE_DEST_FOLDER_NAME);
-
-      // Copy over the old files with the new ////
-
-      ncp(appDataPath + UPDATE_FOLDER_NAME, UPDATE_DEST_FOLDER_NAME, function (err) {
-         if (err) {
-           console.log("copy files error = "+err);
-         }else{
-           //dialog.updateProgressMessage("Files copied over original");
-           console.log('Files Copied!');
-
-           // Delete the zip file
-           fs.unlink(appDataPath + UPDATE_ZIP_NAME, function (err) {
-             if (err) {
-                console.log("delete zip error: "+err);
-                return;
-
-             }else{
-               console.log('successfully deleted update.zip');
-               //dialog.updateProgressMessage("Zip Deleted");
-
-               // Delete the temp folder
-               rimraf(appDataPath + UPDATE_FOLDER_NAME, function(err) {
-                  if (err) {
-                    console.log("rimraf error: "+err);
-                    //throw err;
-                  }else{
-                    updateAppliedSuccessfully = true;
-
-                    console.log('Folder deleted '+UPDATE_FOLDER_NAME);
-
-                    var updateMessage = isAppUpdate? "The Knowledge App has been updated<br>Click Close App and restart." : "The content has been installed";
-
-                    dialog.updateMessage(updateMessage);
-                    dialog.toggleProgress();
-                    dialog.updateConfirmCopy("OK");
-                    dialog.toggleConfirmButton();
-                    if(isAppUpdate) dialog.updateConfirmCopy("Close App");
-                  }
-                });
-              }
-           });
-         }
-
-       });
-
-
-    });
-
-  }
-
-  return{
-    checkForAppUpdate:checkForAppUpdate,
-    downloadAppUpdate:downloadAppUpdate,
-    downloadContentUpdate:downloadContentUpdate,
-    downloadInitialContent:downloadInitialContent,
-    NO_UPDATE:NO_UPDATE,
-    UPDATE_AVAILABLE:UPDATE_AVAILABLE,
-    UPDATE_SUCCESSFUL:UPDATE_SUCCESSFUL
-  }
-};
-
 var FileDownloader = FileDownloader || function(urlObj, targetFilePath, downloadingCallBack, onCompleteCallback, onErrorCallback){
 
   var request = require('request');
@@ -452,9 +221,10 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
   var totalSizeOfFile;
   var req;
   var nothingToDownload = false;
+  var fileNotFound = false;
   var dppError = false;
   var dppErrorBody = "";
-  var isRedirect = false;
+
 
   fs.stat(targetFilePath, function(err, stats){
     if(err){
@@ -473,7 +243,7 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
 
 
   function makeFileRequest(){
-    theDownloadedFile.urlObj = urlObj;
+    //theDownloadedFile.urlObj = urlObj;
     var theUrl = urlObj.mediaurl;
   //  var theUrl = "http://192.168.1.69:9000/web/media/122.TS";
     req = request({
@@ -491,16 +261,29 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
         var contentType = data.headers['content-type'];
         console.log(contentType);
 
-        if(contentType == "text/plain" && data.headers['refresh'] != null){
-          urlObj.mediaurl = (data.headers['refresh']).split('=')[1];
-          isRedirect = true;
+        if(data.statusMessage == "Not Found"){
+          var error = {'message':'Not Found'};
+          onErrorCallback(error, urlObj);
+          fileNotFound = true;
+          fs.unlink(targetFilePath);
           req.abort();
-          makeFileRequest();
+
           return;
         }
+
+        var contentLengthHeader = data.headers['content-length'];
+        var contentRangeHeader = data.headers['content-range'];
+
+        if(!contentLengthHeader && contentRangeHeader){
+          len = parseInt( (data.headers['content-range']).split('/')[1], 10);
+        }
+        else if(contentLengthHeader){
+          len = parseInt(data.headers['content-length'], 10);
+        }
+
         //len = parseInt(data.headers['content-length'], 10);
 
-        len = parseInt( (data.headers['content-range']).split('/')[1], 10);
+        //len = parseInt( (data.headers['content-range']).split('/')[1], 10);
         console.log(len);
         cur = 0;
         total = len / BYTES_IN_MEGABYTE;
@@ -528,22 +311,27 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
 
     req.on('end', function()
     {
-        if(isRedirect) return;
+
         var error = null;
+        var message = "File downloaded successfully";
         if(nothingToDownload){
           console.log("FileDownloader: File already Downloaded");
-        }else if(userInitiatedCancel){
+          message = "File already Downloaded";
+        }else if(fileNotFound){
+          return;
+        }
+        else if(userInitiatedCancel){
           error = {'message':'paused'};
         }else if(dppError){
           error = {'message':dppErrorBody};
           console.log(dppErrorBody);
         }
-        onCompleteCallback(theDownloadedFile, error);
+        onCompleteCallback(urlObj, message, error);
     });
 
     req.on("error", function(e){
         console.log(e);
-        onErrorCallback(e);
+        onErrorCallback(e, urlObj);
     });
   }
 
@@ -560,572 +348,26 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
 
 };
 
-var AppContentViewController = AppContentViewController || function(){
-
-  var viewContentPath = './app-data/appContent.html';
-  var viewControllerName = "AppContentViewController";
-  var previousViewControllerName;
-
-  var request = require('request');
-  var fs = require('fs');
-  var gui = require('nw.gui');
-
-  var JSON_URL = DHLApp.serverBaseUrl + DHLApp.issuesJsonUrl;
-  //var JSON_URL = "http://172.27.164.158:8888/DHL-DPP-SERVER/service/region/233/issues.json";
-  //var jsonFilename = "update.json";
-  var contentIframe;
-  var subLevelNav;
-  var searchIndexer;
-  var searchBox;
-  var searchResults;
-  var breadcrumbs;
-  var menuJsonObj;
-  var iframeResizeTimeout;
-
-  var create = function(extras){
-    previousViewControllerName = extras? extras.previousViewControllerName : null;
-
-    contentIframe = document.querySelector('#contentIFrame');
-    window.addEventListener('resize', _onResize, false);
-    _loadContent();
-  };
-
-  var _loadContent = function(){
-    DHLApp.readJsonFromDisk(DHLApp.appContentDataPath + DHLApp.menuJsonName, function(error, jsonObj){//menu3.json
-      if(error){
-        console.log(error.status);
-      }else if(jsonObj){
-        var homeLogoButton = document.querySelector('#mainContentMenu #knowledgeLogo');
-        homeLogoButton.onclick = function(){
-          //_clearMenuHighlights();
-          _hideSubMenu();
-          _clearItemsFromSubMenu();
-          if(breadcrumbs) breadcrumbs.innerHTML = "";
-          _updateIframe(DHLApp.appContentDataPath + jsonObj.landing);
-        };
-        // Generate Menu
-        _generateMenu(jsonObj);
-
-        // Load the content
-        _updateIframe(DHLApp.appContentDataPath + jsonObj.landing);
-
-      }else{
-        // Download the content
-        console.log("File does not exist");
-        //_downloadInitialContent();
-        DHLApp.startViewController(new ContentDownloadViewController());
-      }
-    });
-  };
-
-/////// Main Menu Generation ///////////
-
-  var _generateMenu = function(menuObj){
-    menuJsonObj = menuObj;
-
-    searchBox = document.querySelector('#mainContentMenu #searchBox');
-    searchResults = document.querySelector('#searchResults');
-    searchResults.addEventListener('transitionend', _onSearchTransEnd,false);
-    var searchCloseButton = document.querySelector('#searchResults #searchCloseButton');
-    searchCloseButton.onclick = _onSearchClosed;
-    searchBox.addEventListener('keyup', _onSearchKeyUp, false);
-    searchIndexer = new SearchIndexBuilder();
-    searchIndexer.updateIndex(DHLApp.appContentDataPath + 'searchIndex.json');
-
-    var topLevelNav = document.querySelector('#mainContentMenu #topLevelNav');
-    subLevelNav = document.querySelector('#mainContentMenu #subLevelNav');
-
-
-
-    breadcrumbs = document.querySelector('#breadcrumbs');
-
-    //console.log("currentPath = ",_getBreadcrumbPath(menuJsonObj.sections, {},"User Guide") );
-
-    var menuSections = menuJsonObj.sections;
-
-    for(var i=0; i< menuSections.length; i++){
-      var navItem = document.createElement('li');
-
-      if(menuSections[i].hasOwnProperty('pages') ){
-        //navItem.isMenu = true;
-        //navItem.onclick = _onNavItemClicked;
-        //navItem.onmouseover = _showSubMenu;
-        navItem.onclick = _onTopMenuItemClicked;
-        //navItem.onmouseout = _hideSubMenu;
-        navItem.pages = menuSections[i].pages;
-      }else{
-        navItem.onclick = _onNavItemClicked;
-      }
-
-      navItem.innerHTML = menuSections[i].title;
-      navItem.menuObj = menuSections[i];
-      topLevelNav.appendChild(navItem);
-    }
-
-    var mainContentMenu = document.querySelector('#mainContentMenu');
-    mainContentMenu.classList.add('show');
-    searchResults.classList.add('show');
-
-
-  };
-
-  var _onTopMenuItemClicked = function(e){
-    var menuItem = this;
-    if(menuItem.classList.contains('highlighted')){
-      _onNavItemClicked.call(menuItem, e);
-    }else{
-      _showSubMenu.call(menuItem, e);
-    }
-  };
-
-  var _addItemsToSubMenu = function(pages, elem){
-
-    elem.setAttribute('class', 'subItemList');
-
-    for(var j=0; j< pages.length; j++){
-      if(pages[j].hasOwnProperty('pages')){
-        var subNavTitleItem = document.createElement('li');
-        subNavTitleItem.setAttribute('class', 'subNavTitleItem');
-        subNavTitleItem.menuObj = pages[j];
-        subNavTitleItem.onclick = _onNavItemClicked;
-        //subNavTitleItem.isMenu = true;
-        subNavTitleItem.innerHTML = pages[j].title;
-
-        var subItemList = document.createElement('span');
-        subItemList.appendChild(subNavTitleItem);
-        _addItemsToSubMenu( pages[j].pages, subItemList );
-      }else{
-        var subNavItem = document.createElement('li');
-        subNavItem.setAttribute('class', 'subLevelLink');
-        subNavItem.innerHTML = pages[j].title;
-        subNavItem.menuObj = pages[j];
-        subNavItem.onclick = _onNavItemClicked;
-        elem.appendChild(subNavItem);
-      }
-    }
-    subLevelNav.appendChild(elem);
-  };
-
-
-  var _onNavItemClicked = function(e){
-    var currentLink = this;
-    _updateIframe(DHLApp.appContentDataPath + currentLink.menuObj.path);
-
-    var breadCrumbArray = _getBreadcrumbPath(menuJsonObj.sections, {}, currentLink.menuObj.path);
-    //var breadCrumbArray = _getBreadCrumbPathOnClick.call(this, e);
-    breadcrumbs.innerHTML = "";
-
-    for(var i=0; i< breadCrumbArray.length; i++){
-
-      var bcTitle = breadCrumbArray[i].title;
-      var breadcrumb = document.createElement('div');
-      breadcrumb.setAttribute('class', 'breadcrumb');
-      breadcrumb.innerHTML = bcTitle;
-      breadcrumb.menuObj = breadCrumbArray[i];
-      if(breadCrumbArray[i].path && i!=breadCrumbArray.length-1){
-        breadcrumb.onclick = _onNavItemClicked;
-        breadcrumb.style.cursor = 'pointer';
-      }
-      breadcrumbs.appendChild(breadcrumb);
-
-      if(i!=breadCrumbArray.length-1){
-        var separator = document.createElement('span');
-        separator.innerHTML = " > ";
-        breadcrumbs.appendChild(separator);
-      };
-    }
-
-    _highlightCurrentPageOnMenu();
-
-  };
-
-  var _showSubMenu = function(e){
-    _hideSubMenu();
-    _clearItemsFromSubMenu();
-    var subItemList = document.createElement('span');
-    _addItemsToSubMenu(e.target.pages, subItemList);
-
-    var closeButton = new Image();
-    closeButton.classList.add('subLevelNavClose');
-    closeButton.src = 'images/close-button.png';
-    closeButton.onclick = _highlightCurrentPageOnMenu;
-    subLevelNav.appendChild(closeButton);
-
-    var clear = document.createElement('div');
-    clear.style.clear = 'both';
-    subLevelNav.appendChild(clear);
-    e.target.classList.add('highlighted');
-    subLevelNav.classList.add('show');
-
-
-  };
-
-  var _highlightCurrentPageOnMenu = function(){
-    var topLevelNavItems = document.querySelectorAll('#topLevelNav li');
-    var currentBreadCrumbs = breadcrumbs.innerHTML.toUpperCase();
-
-    _hideSubMenu();
-    if(currentBreadCrumbs != ""){
-      var currentActive = currentBreadCrumbs.split(' &GT; ')[0];
-      for(var i=0; i< topLevelNavItems.length; i++){
-        if(currentActive == topLevelNavItems[i].innerHTML.toUpperCase()){
-          topLevelNavItems[i].classList.add('currentActive');
-        }
-      }
-    }
-  };
-
-  var _clearMenuHighlights = function(){
-    var topLevelNavItems = document.querySelectorAll('#topLevelNav li');
-    for(var i=0; i< topLevelNavItems.length; i++){
-      topLevelNavItems[i].classList.remove('highlighted');
-      topLevelNavItems[i].classList.remove('currentActive');
-    }
-  };
-
-  var _hideSubMenu = function(){
-    _clearMenuHighlights();
-    subLevelNav.style.transition = "none";
-    subLevelNav.classList.remove('show');
-    subLevelNav.offsetHeight;
-    subLevelNav.style.transition = "opacity 0.3s ease-in-out";
-  };
-
-  var _clearItemsFromSubMenu = function(){
-    subLevelNav.innerHTML = "";
-  };
-
-
-
-///////// Updating IFRAME //////////
-
-
-  var _updateIframe = function(path){
-    contentIframe.onload = _onIframeLoaded;
-    contentIframe.style.transition = "none";
-    contentIframe.style.opacity = "0";
-    contentIframe.offsetHeight;
-    contentIframe.style.transition = "opacity 0.6s ease-in-out";
-    contentIframe.src = path;
-  };
-
-  var _onIframeLoaded = function(){
-    var iframeAnchorTags = contentIframe.contentWindow.document.querySelectorAll('a');
-    for(var i=0; i< iframeAnchorTags.length; i++){
-      if(iframeAnchorTags[i].hasAttribute('href')){
-        iframeAnchorTags[i].onclick = _onInterceptUrlRequest;
-      }
-      iframeAnchorTags[i].style.outline = 'none';
-    }
-    contentIframe.contentWindow.document.body.style.overflow = 'hidden';
-
-    var section = contentIframe.contentWindow.document.querySelector('section');
-    var appContentView = document.querySelector('.appContentView');
-    if(section.getAttribute('data-bg') != undefined){
-      appContentView.style.backgroundColor = "black";
-      breadcrumbs.classList.add('white');
-    }else{
-      appContentView.style.backgroundColor = "white";
-      breadcrumbs.classList.remove('white');
-    }
-
-
-    var versionInfoArea = contentIframe.contentWindow.document.querySelector('.version-content');
-    if(versionInfoArea){
-      // get current version date
-      _checkForUpdate(function(versionsObj){
-        versionInfoArea.children[0].children[0].innerHTML += versionsObj.remoteDate? ' '+versionsObj.remoteDate : " Server not available";
-        versionInfoArea.children[1].children[0].innerHTML += ' '+versionsObj.localDate;
-      });
-    }
-
-    var springboardAccordians = contentIframe.contentWindow.document.querySelectorAll('.springboard-accordion');
-    if(springboardAccordians){
-      for(var j=0; j< springboardAccordians.length; j++){
-        springboardAccordians[j].addEventListener('click', _onAccordianClicked, false);
-      }
-    }
-
-    _onResize();
-    contentIframe.style.opacity = "1";
-  };
-
-  var _onAccordianClicked = function(e){
-    console.log('acc clicked');
-    setTimeout(_onResize,100);
-  };
-
-  var _onInterceptUrlRequest = function(e){
-    e.preventDefault();
-    var urlRequest = this.href;
-    var protocol = this.protocol;
-    console.log("protocol = "+protocol);
-    console.log("this.protocol = "+this.protocol);
-    console.log("this.hostname = "+this.hostname);
-    console.log("this.pathname = "+this.pathname);
-
-    if(protocol === 'update:'){
-      _checkForUpdate();
-    }else if(protocol === 'http:' || protocol === 'https:'){
-      gui.Shell.openExternal(urlRequest);
-    }else if(protocol === 'tablet:'){
-      console.log(menuJsonObj);
-
-
-      var internalPath = this.pathname.substring(1);
-      console.log("internalPath = "+internalPath);
-      console.log("menuJsonObj = "+menuJsonObj.sections);
-
-      var pagePath = _getPagePath(menuJsonObj.sections, internalPath);
-
-      console.log("pagePath = "+pagePath);
-
-      var internalLink = {};
-      internalLink.menuObj = {};
-      internalLink.menuObj.path = pagePath;
-      _onNavItemClicked.call(internalLink, null);
-      
-
-    }
-
-  };
-
-  var _onResize = function(){
-    clearTimeout(iframeResizeTimeout);
-    iframeResizeTimeout = setTimeout(function(){
-      if(contentIframe){
-        contentIframe.style.height = "1px";
-        contentIframe.style.offsetHeight;
-        contentIframe.style.height = contentIframe.contentWindow.document.body.scrollHeight + 'px';
-      }
-    }, 100);
-  };
-
-///// Checking for Content Update ///////////
-
-  var _checkForUpdate = function(updateCallback){
-
-    DHLApp.readJsonFromDisk(DHLApp.appDataPath+DHLApp.updateJsonName, function(error, jsonObj){
-      if(error){
-        console.log(error.status);
-      }else if(jsonObj){
-        //console.log(jsonObj);
-
-        var localJsonData = jsonObj
-
-        request(DHLApp.addSecurityQueryString(JSON_URL), function (error, response, data) {
-          if (error) {
-            // Can't connect to Server So no updates available
-            //console.log("Can't reach the server "+error);
-            if(updateCallback){
-              var versionsObj = {};
-              versionsObj.localDate = DHLApp.convertTimestampToDate( localJsonData.items[0].date );
-              versionsObj.remoteDate = null;
-              updateCallback(versionsObj);
-            }else{
-              var errorDialog = new Dialog("Can't connect to server, check your internet connection", {confirmCopy:"OK"}, function(){
-                errorDialog.hide();
-                errorDialog = null;
-              });
-            }
-          }else{
-            var remoteJsonData = JSON.parse(data);
-            //console.log(remoteJsonData);
-
-            if(updateCallback){
-              var versionsObj = {};
-              versionsObj.localDate = DHLApp.convertTimestampToDate( localJsonData.items[0].date );
-              versionsObj.remoteDate = DHLApp.convertTimestampToDate( remoteJsonData.items[0].date );
-              updateCallback(versionsObj);
-            }else{
-              if(remoteJsonData.items[0].date !== localJsonData.items[0].date){
-                // if date is not the same on remote json then there is an update available so download the zip
-                console.log("An update is available");
-                var zipUrl = remoteJsonData.items[0].issueurl;//deltaupdateurl
-                _downloadZipFile(zipUrl, data);
-              }else{
-                console.log("NO update available");
-                var uptoDateDialog = new Dialog("Your content is up to date", {confirmCopy:"OK"}, function(){
-                  uptoDateDialog.hide();
-                  uptoDateDialog = null;
-                });
-              }
-            }
-          }
-        });
-
-      }
+var VideoConverter = VideoConverter || function(sourceVideoPath, targetFilePath, videoOptions, convertingCallBack, onCompleteCallback, onErrorCallback){
+
+  var hbjs = require("handbrake-js");
+
+  hbjs.spawn({ input: sourceVideoPath, output: targetFilePath, preset:"Normal"})
+    .on("error", function(err){
+      // invalid user input, no video found etc
+      onErrorCallback(err);
+    })
+    .on("progress", function(progress){
+      console.log("Percent complete: %s, ETA: %s",progress.percentComplete,progress.eta);
+      convertingCallBack(progress);
+    })
+    .on("end", function(){
+
+    })
+    .on("complete", function(){
+      onCompleteCallback();
     });
 
-  };
-
-
-  var _downloadZipFile = function(zipUrl, remoteJsonData, message){
-    console.log("download this file "+zipUrl);
-    var theMessage;
-    if(!message){
-      theMessage = "An update to the DHL Knowledge Content is available.<br>Click OK to update"
-    }else{
-      theMessage = message;
-    }
-
-    var updater = new AppUpdater({zipName:"content_update.zip", srcFolderName:"content_update", destFolderName:DHLApp.appContentDataPath});
-    updater.downloadContentUpdate(zipUrl, theMessage, function(message, error){
-      if(error){
-
-      }else{
-        if(message === updater.UPDATE_SUCCESSFUL){
-          console.log(updater.UPDATE_SUCCESSFUL);
-          // Update successful so write the json to disk for next time
-          fs.exists(DHLApp.appDataPath, function (exists) {
-            if(!exists) fs.mkdirSync(DHLApp.appDataPath);
-            fs.writeFile(DHLApp.appDataPath+DHLApp.updateJsonName, remoteJsonData, "utf-8", function(err){
-              if(err) console.log("Error writing json to disk");
-            });
-          });
-          //updateButton.removeAttribute('disabled');
-          //_loadContent();
-          DHLApp.startViewController(new AppContentViewController());
-
-        }else if(message === updater.NO_UPDATE){
-          console.log(updater.NO_UPDATE);
-          //updateButton.removeAttribute('disabled');
-        }
-      }
-    });
-  };
-
-  var _onSearchKeyUp = function(){
-    var results = searchIndexer.search(searchBox.value);
-    var searchResultsList = document.querySelector('#searchResults ul');
-    var searchTitle = document.querySelector('#searchResults #searchTitle');
-    if(results.length > 0){
-      searchTitle.innerHTML = results.length +" Result(s)";
-      searchResults.style.display = "block";
-      searchResults.offsetHeight;
-      searchResults.classList.add('expand');
-      searchResultsList.innerHTML = "";
-      for(var i=0; i< results.length; i++){
-        var searchResult = document.createElement('li');
-        var breadCrumbArray = _getBreadcrumbPath(menuJsonObj.sections, {}, results[i].path);
-        if(breadCrumbArray.length > 0){
-          var breadCrumb = "";
-          for(var j=0; j< breadCrumbArray.length; j++){
-            breadCrumb += (j==breadCrumbArray.length-1)? breadCrumbArray[j].title : breadCrumbArray[j].title + " > ";
-          }
-          searchResult.innerHTML = "<span class='searchBreadCrumb'>"+breadCrumb+"</span><br><span class='searchResultTitle'>"+results[i].title+"</span>";
-        }else{
-          searchResult.innerHTML = results[i].title;
-        }
-        searchResult.menuObj = results[i];
-        searchResult.onclick = function(e){
-          _onNavItemClicked.call(this, e);
-          //_highlightCurrentPageOnMenu();
-        };
-        searchResultsList.appendChild(searchResult);
-      }
-    }else{
-      searchResults.classList.remove('expand');
-    }
-  };
-
-  var _onSearchClosed = function(){
-    searchResults.classList.remove('expand');
-  };
-
-  var _onSearchTransEnd = function(){
-    if(!searchResults.classList.contains('expand')){
-      searchResults.style.display = "none";
-    }
-  };
-/*
-  var _getBreadCrumbPathOnClick = function(e){
-    console.log("s"+ this.tagName);
-
-    var breadCrumbsArray = [];
-
-    if(this.tagName === 'LI'){
-      // a menu item was clicked
-      var topLevelNavItems = document.querySelectorAll('#topLevelNav li');
-      for(var i=0; i< topLevelNavItems.length; i++){
-        if(topLevelNavItems[i].classList.contains('highlighted')){
-          breadCrumbsArray.push( topLevelNavItems[i].menuObj );
-        }
-      }
-      var subNavTitle = this.parentNode.querySelector('.subNavTitleItem');
-
-      if(subNavTitle && !this.classList.contains('subNavTitleItem')){
-        breadCrumbsArray.push( subNavTitle.menuObj );
-      }
-
-      if(!this.classList.contains('highlighted')){
-        breadCrumbsArray.push( this.menuObj );
-      }
-
-    }else if(this.tagName === 'DIV'){
-      // a breadcrumb item was clicked
-      var breadcrumbs = this.parentNode.children;
-      for(var j=0; j< breadcrumbs.length; j++){
-        if(breadcrumbs[j].classList.contains('breadcrumb') ){
-          breadCrumbsArray.push( breadcrumbs[j].menuObj );
-          if(this.menuObj.title == breadcrumbs[j].menuObj.title) break;
-        }
-      }
-    }
-    return breadCrumbsArray;
-
-  };
-
-*/
-  var _getBreadcrumbPath = function(arr, parentObj, pathToFind){
-
-    for(var x=0; x<arr.length; x++){
-
-      if(arr[x].path === pathToFind){
-        var currentPath = [];
-        if(parentObj && parentObj.pObj && parentObj.pObj.title) currentPath.push(parentObj.pObj);
-        if(parentObj && parentObj.title) currentPath.push(parentObj);
-        currentPath.push(arr[x]);
-        return currentPath;
-
-      }else if(arr[x].hasOwnProperty('pages')){
-        arr[x].pObj = parentObj;
-        var result = _getBreadcrumbPath(arr[x].pages, arr[x], pathToFind);
-        if( result ){
-          return result;
-        }
-      }
-    }
-    return false;
-  };
-
-  var _getPagePath = function(arr, originalPath){
-
-    for(var i=0; i<arr.length; i++){
-      if(arr[i]['original-path'] === originalPath){
-        return arr[i].path;
-      }else if(arr[i].hasOwnProperty('pages')){
-        var result = _getPagePath(arr[i].pages, originalPath);
-        if(result) return result;
-      }
-    }
-    return false;
-  };
-
-
-  var destroy = function(){
-    // Remove event listeners and null out objects here
-    window.removeEventListener('resize', _onResize, false);
-    if(searchResults) searchResults.removeEventListener('transitionend', _onSearchTransEnd,false);
-    if(searchBox) searchBox.removeEventListener('keyup', _onSearchKeyUp, false);
-  };
-
-  return {
-    viewContentPath:viewContentPath,
-    viewControllerName:viewControllerName,
-    create:create,
-    destroy:destroy
-  };
 };
 
 var DownloadViewController = DownloadViewController || function(){
@@ -1141,16 +383,57 @@ var DownloadViewController = DownloadViewController || function(){
   var appDataPath = gui.App.dataPath + "/";
   //var cwd = process.cwd();
   var urlJsonName = "urls.json";
+  var indexPath = "browse/index.jim";
 
   var currentJsonUrlObj;
   var mediaList;
+  var totalMediaFilesToDownload = 0;
+  var noOfMediaFilesDownloaded = 0;
+  var filesToDownloadArray;
+
+  var testData = {
+                  urls:[
+                    {
+                      title:"01.zip",
+                      desc:"01 desc",
+                      mediaurl:"http://localhost:8888/DLNA-SERVER/01.zip"
+                    },
+                    {
+                      title:"02.zip",
+                      desc:"02 desc",
+                      mediaurl:"http://localhost:8888/DLNA-SERVER/02.zip"
+                    },
+                    {
+                      title:"03.zip",
+                      desc:"03 desc",
+                      mediaurl:"http://localhost:8888/DLNA-SERVER/03.zip"
+                    },
+                    {
+                      title:"04.zip",
+                      desc:"04 desc",
+                      mediaurl:"http://localhost:8888/DLNA-SERVER/04.zip"
+                    },
+                    {
+                      title:"05.zip",
+                      desc:"05 desc",
+                      mediaurl:"http://localhost:8888/DLNA-SERVER/05.zip"
+                    }
+                  ]
+                };
 
 
   var create = function(extras){
     previousViewControllerName = extras? extras.previousViewControllerName : null;
 
     mediaList = document.querySelector('#mediaList');
-    _getCurrentUrls();
+
+    //_getCurrentUrls();
+
+    //_convertVideo();
+
+    totalMediaFilesToDownload = testData.urls.length;
+    filesToDownloadArray = testData.urls;
+    _downloadMediaFiles();
 
   };
 
@@ -1197,14 +480,19 @@ var DownloadViewController = DownloadViewController || function(){
                     _writeJsonToDisk(currentJsonUrlObj);
                   }
                   if(downloadArray.length > 0){
-                    _downloadMediaFiles(downloadArray);
+                    totalMediaFilesToDownload = downloadArray.length;
+                    filesToDownloadArray = downloadArray;
+                    _downloadMediaFiles();
                   }
                 }
               });
 
             }else{
               // First run so download everything
-              _downloadMediaFiles(remoteJsonUrlObj.urls);
+              totalMediaFilesToDownload = remoteJsonUrlObj.urls.length;
+              filesToDownloadArray = remoteJsonUrlObj.urls;
+              _downloadMediaFiles();
+
 
             }
 
@@ -1233,7 +521,7 @@ var DownloadViewController = DownloadViewController || function(){
 
 
   var _getDlnaUrls = function(callback){
-    request(App.serverUrl, function (error, response, data) {
+    request(App.serverUrl+indexPath, function (error, response, data) {
 
       if (!error && response.statusCode == 200) {
         //console.log(response.body);
@@ -1250,21 +538,43 @@ var DownloadViewController = DownloadViewController || function(){
 
       //  console.log(dlnaElems[]);
 
+        var totalNoOfLinks = dlnaElems.length;
+        var noOfLinksReceived = 0;
+
         for(var i=0; i< dlnaElems.length; i++){
 
           var mediaLink = dlnaElems[i].querySelector('a.bf');
           //console.log(mediaLink.getAttribute('file'));
 
-          var desc = mediaLink.title;
-          var mediaUrl = mediaLink.getAttribute('file');
-          var title = decodeURI(mediaUrl.split('/')[3]);
-          var dlnaUrl = "http://192.168.1.69/browse/download.jim?file="+mediaUrl+"&base=192.168.1.69";
-          dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaUrl,
-                                        "title":title,
-                                        "desc":desc} );
+          //var desc = mediaLink.title;
+          var file = mediaLink.getAttribute('file');
+          //var title = decodeURI(mediaUrl.split('/')[3]);
+          var type = mediaLink.getAttribute('type');
+
+          //var dlnaUrl = "http://192.168.1.69/browse/download.jim?file="+file+"&base=192.168.1.69";
+
+          var dlnaUrl = App.serverUrl+'browse/file.jim?file=' + file+ '&type=' + type;
+
+          request(dlnaUrl, function (error, response, data) {
+            if (!error && response.statusCode == 200) {
+              noOfLinksReceived++;
+              var fileInfoHTML = parser.parseFromString(response.body, "text/html");
+
+              // TODO: need to go into dom for this info and get dlnaurl, title and desc
+
+              dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaUrl,"title":title,"desc":desc} );
+
+              if(noOfLinksReceived == totalNoOfLinks){
+                callback(null, dlnaElemsJsonObj);
+              }
+            }
+            else if(error){
+              totalNoOfLinks--;
+            }
+          });
+
         }
         console.log(dlnaElemsJsonObj);
-        callback(null, dlnaElemsJsonObj);
 
 
         //console.log("dlnaElemsJsonObj ",dlnaElemsJsonObj);
@@ -1283,31 +593,50 @@ var DownloadViewController = DownloadViewController || function(){
 
 
 
-  var _downloadMediaFiles = function(downloadArr){
+  var _downloadMediaFiles = function(){
 
-    //for(var i=0; i< downloadArr.length; i++){
-    for(var i=5; i< 6; i++){
+    console.log("noOfMediaFilesDownloaded ",noOfMediaFilesDownloaded);
+    console.log("totalMediaFilesToDownload ",totalMediaFilesToDownload);
 
-      var fileName = downloadArr[i].title;
-
+    for(var i=0; i<filesToDownloadArray.length; i++){
       var mediaElement = document.createElement('li');
-      mediaElement.urlObj = downloadArr[i];
+      mediaElement.urlObj = filesToDownloadArray[i];
+
+      var fileName = filesToDownloadArray[i].title;
 
       var mediaLabel = document.createElement('p');
       mediaLabel.innerHTML = fileName;
+      mediaLabel.setAttribute('class','mediaLabel');
+      var progLabel = document.createElement('p');
+      progLabel.setAttribute('class','progLabel');
+      progLabel.innerHTML = "";
       var mediaProgress = document.createElement('progress');
       mediaProgress.max = "100";
       mediaProgress.value = "0";
       mediaElement.appendChild(mediaLabel);
+      mediaElement.appendChild(progLabel);
       mediaElement.appendChild(mediaProgress);
       mediaList.appendChild(mediaElement);
-
-      new FileDownloader(downloadArr[i],  appDataPath+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
     }
+
+    var fileName = filesToDownloadArray[noOfMediaFilesDownloaded].title;
+    _startDownloadOfFile(filesToDownloadArray[noOfMediaFilesDownloaded], App.downloadFolder+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
+
   };
 
-  var _onFileDownloadError = function(error){
+  var _startDownloadOfFile = function(urlObj, targetFilePath, downloadingCallBack, onCompleteCallback, onErrorCallback){
+    new FileDownloader(urlObj, targetFilePath, downloadingCallBack, onCompleteCallback, onErrorCallback);
+
+  };
+
+  var _onFileDownloadError = function(error, urlObj){
     console.log("Download Error ",error);
+    for(var i=0; i<mediaList.children.length; i++){
+      if(mediaList.children[i].urlObj.title === urlObj.title){
+        mediaList.children[i].children[1].innerHTML = "File not found on server";
+      }
+    }
+    totalMediaFilesToDownload--;
   }
 
   var _onFileDownloadProgress = function(amountDownloaded, totalAmount, mediaTitle){
@@ -1316,38 +645,44 @@ var DownloadViewController = DownloadViewController || function(){
 
     for(var i=0; i<mediaList.children.length; i++){
       if(mediaList.children[i].urlObj.title === mediaTitle){
-        mediaList.children[i].children[1].value = percentageDownLoaded;
+
+        mediaList.children[i].children[1].innerHTML = updateCopy + "  "+Math.floor(percentageDownLoaded)+"%";
+        mediaList.children[i].children[2].value = percentageDownLoaded;
       }
     }
-
-    //console.log(updateCopy + "  "+ percentageDownLoaded+"%");
-
   }
 
-  var _onFileDownloaded = function(downloadedFile, error){
+  var _onFileDownloaded = function(urlObj, message, error){
     console.log(error);
     if((error && error.message != 'paused') ){
+
 
     }else if(error && error.message == 'paused'){
       return;
     }
     else{
-
       if(!currentJsonUrlObj){
         currentJsonUrlObj = {};
         currentJsonUrlObj.urls = [];
       }
-
-      currentJsonUrlObj.urls.push( {"mediaurl":downloadedFile.mediaurl,
-                                    "title":downloadedFile.title,
-                                    "desc":downloadedFile.desc} );
-
-      //currentJsonUrlObj.urls.push( {"mediaurl":downloadedFile.remoteUrl} );
-
+      currentJsonUrlObj.urls.push( {"mediaurl":urlObj.mediaurl,"title":urlObj.title,"desc":urlObj.desc} );
       _writeJsonToDisk(currentJsonUrlObj);
+      noOfMediaFilesDownloaded++;
 
-      console.log(downloadedFile);
+      for(var i=0; i<mediaList.children.length; i++){
+        if(mediaList.children[i].urlObj.title === urlObj.title){
+          mediaList.children[i].classList.add('dlComplete');
+          mediaList.children[i].children[1].innerHTML = message;
+          // put tick by download
+        }
+      }
 
+      if(noOfMediaFilesDownloaded === totalMediaFilesToDownload){
+        // Start transcoding the files
+      }else{
+        var fileName = filesToDownloadArray[noOfMediaFilesDownloaded].title;
+        _startDownloadOfFile(filesToDownloadArray[noOfMediaFilesDownloaded], App.downloadFolder+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
+      }
     }
   }
 
@@ -1399,6 +734,22 @@ var DownloadViewController = DownloadViewController || function(){
         arr.splice(i, 1);
       }
     }
+  };
+
+
+  var _convertVideo = function(){
+    new VideoConverter(appDataPath+"uncle_test.ts", appDataPath+"uncle_test_normal_32.mp4", null, _onConvertProgress, _onConvertComplete, _onConvertError);
+  };
+
+  var _onConvertError = function(error){
+    console.log("error = "+error);
+  };
+  var _onConvertProgress = function(progress){
+    console.log("converting file = "+progress.percentComplete+"  "+progress.eta);
+
+  };
+  var _onConvertComplete = function(){
+    console.log("conversion Complete");
   };
 
   var destroy = function(){

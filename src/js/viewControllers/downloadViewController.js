@@ -11,16 +11,57 @@ var DownloadViewController = DownloadViewController || function(){
   var appDataPath = gui.App.dataPath + "/";
   //var cwd = process.cwd();
   var urlJsonName = "urls.json";
+  var indexPath = "browse/index.jim";
 
   var currentJsonUrlObj;
   var mediaList;
+  var totalMediaFilesToDownload = 0;
+  var noOfMediaFilesDownloaded = 0;
+  var filesToDownloadArray;
+
+  var testData = {
+                  urls:[
+                    {
+                      title:"01.zip",
+                      desc:"01 desc",
+                      mediaurl:"http://localhost:8888/DLNA-SERVER/01.zip"
+                    },
+                    {
+                      title:"02.zip",
+                      desc:"02 desc",
+                      mediaurl:"http://localhost:8888/DLNA-SERVER/02.zip"
+                    },
+                    {
+                      title:"03.zip",
+                      desc:"03 desc",
+                      mediaurl:"http://localhost:8888/DLNA-SERVER/03.zip"
+                    },
+                    {
+                      title:"04.zip",
+                      desc:"04 desc",
+                      mediaurl:"http://localhost:8888/DLNA-SERVER/04.zip"
+                    },
+                    {
+                      title:"05.zip",
+                      desc:"05 desc",
+                      mediaurl:"http://localhost:8888/DLNA-SERVER/05.zip"
+                    }
+                  ]
+                };
 
 
   var create = function(extras){
     previousViewControllerName = extras? extras.previousViewControllerName : null;
 
     mediaList = document.querySelector('#mediaList');
-    _getCurrentUrls();
+
+    //_getCurrentUrls();
+
+    //_convertVideo();
+
+    totalMediaFilesToDownload = testData.urls.length;
+    filesToDownloadArray = testData.urls;
+    _downloadMediaFiles();
 
   };
 
@@ -67,14 +108,19 @@ var DownloadViewController = DownloadViewController || function(){
                     _writeJsonToDisk(currentJsonUrlObj);
                   }
                   if(downloadArray.length > 0){
-                    _downloadMediaFiles(downloadArray);
+                    totalMediaFilesToDownload = downloadArray.length;
+                    filesToDownloadArray = downloadArray;
+                    _downloadMediaFiles();
                   }
                 }
               });
 
             }else{
               // First run so download everything
-              _downloadMediaFiles(remoteJsonUrlObj.urls);
+              totalMediaFilesToDownload = remoteJsonUrlObj.urls.length;
+              filesToDownloadArray = remoteJsonUrlObj.urls;
+              _downloadMediaFiles();
+
 
             }
 
@@ -103,7 +149,7 @@ var DownloadViewController = DownloadViewController || function(){
 
 
   var _getDlnaUrls = function(callback){
-    request(App.serverUrl, function (error, response, data) {
+    request(App.serverUrl+indexPath, function (error, response, data) {
 
       if (!error && response.statusCode == 200) {
         //console.log(response.body);
@@ -120,21 +166,43 @@ var DownloadViewController = DownloadViewController || function(){
 
       //  console.log(dlnaElems[]);
 
+        var totalNoOfLinks = dlnaElems.length;
+        var noOfLinksReceived = 0;
+
         for(var i=0; i< dlnaElems.length; i++){
 
           var mediaLink = dlnaElems[i].querySelector('a.bf');
           //console.log(mediaLink.getAttribute('file'));
 
-          var desc = mediaLink.title;
-          var mediaUrl = mediaLink.getAttribute('file');
-          var title = decodeURI(mediaUrl.split('/')[3]);
-          var dlnaUrl = "http://192.168.1.69/browse/download.jim?file="+mediaUrl+"&base=192.168.1.69";
-          dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaUrl,
-                                        "title":title,
-                                        "desc":desc} );
+          //var desc = mediaLink.title;
+          var file = mediaLink.getAttribute('file');
+          //var title = decodeURI(mediaUrl.split('/')[3]);
+          var type = mediaLink.getAttribute('type');
+
+          //var dlnaUrl = "http://192.168.1.69/browse/download.jim?file="+file+"&base=192.168.1.69";
+
+          var dlnaUrl = App.serverUrl+'browse/file.jim?file=' + file+ '&type=' + type;
+
+          request(dlnaUrl, function (error, response, data) {
+            if (!error && response.statusCode == 200) {
+              noOfLinksReceived++;
+              var fileInfoHTML = parser.parseFromString(response.body, "text/html");
+
+              // TODO: need to go into dom for this info and get dlnaurl, title and desc
+
+              dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaUrl,"title":title,"desc":desc} );
+
+              if(noOfLinksReceived == totalNoOfLinks){
+                callback(null, dlnaElemsJsonObj);
+              }
+            }
+            else if(error){
+              totalNoOfLinks--;
+            }
+          });
+
         }
         console.log(dlnaElemsJsonObj);
-        callback(null, dlnaElemsJsonObj);
 
 
         //console.log("dlnaElemsJsonObj ",dlnaElemsJsonObj);
@@ -153,31 +221,50 @@ var DownloadViewController = DownloadViewController || function(){
 
 
 
-  var _downloadMediaFiles = function(downloadArr){
+  var _downloadMediaFiles = function(){
 
-    //for(var i=0; i< downloadArr.length; i++){
-    for(var i=5; i< 6; i++){
+    console.log("noOfMediaFilesDownloaded ",noOfMediaFilesDownloaded);
+    console.log("totalMediaFilesToDownload ",totalMediaFilesToDownload);
 
-      var fileName = downloadArr[i].title;
-
+    for(var i=0; i<filesToDownloadArray.length; i++){
       var mediaElement = document.createElement('li');
-      mediaElement.urlObj = downloadArr[i];
+      mediaElement.urlObj = filesToDownloadArray[i];
+
+      var fileName = filesToDownloadArray[i].title;
 
       var mediaLabel = document.createElement('p');
       mediaLabel.innerHTML = fileName;
+      mediaLabel.setAttribute('class','mediaLabel');
+      var progLabel = document.createElement('p');
+      progLabel.setAttribute('class','progLabel');
+      progLabel.innerHTML = "";
       var mediaProgress = document.createElement('progress');
       mediaProgress.max = "100";
       mediaProgress.value = "0";
       mediaElement.appendChild(mediaLabel);
+      mediaElement.appendChild(progLabel);
       mediaElement.appendChild(mediaProgress);
       mediaList.appendChild(mediaElement);
-
-      new FileDownloader(downloadArr[i],  appDataPath+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
     }
+
+    var fileName = filesToDownloadArray[noOfMediaFilesDownloaded].title;
+    _startDownloadOfFile(filesToDownloadArray[noOfMediaFilesDownloaded], App.downloadFolder+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
+
   };
 
-  var _onFileDownloadError = function(error){
+  var _startDownloadOfFile = function(urlObj, targetFilePath, downloadingCallBack, onCompleteCallback, onErrorCallback){
+    new FileDownloader(urlObj, targetFilePath, downloadingCallBack, onCompleteCallback, onErrorCallback);
+
+  };
+
+  var _onFileDownloadError = function(error, urlObj){
     console.log("Download Error ",error);
+    for(var i=0; i<mediaList.children.length; i++){
+      if(mediaList.children[i].urlObj.title === urlObj.title){
+        mediaList.children[i].children[1].innerHTML = "File not found on server";
+      }
+    }
+    totalMediaFilesToDownload--;
   }
 
   var _onFileDownloadProgress = function(amountDownloaded, totalAmount, mediaTitle){
@@ -186,38 +273,44 @@ var DownloadViewController = DownloadViewController || function(){
 
     for(var i=0; i<mediaList.children.length; i++){
       if(mediaList.children[i].urlObj.title === mediaTitle){
-        mediaList.children[i].children[1].value = percentageDownLoaded;
+
+        mediaList.children[i].children[1].innerHTML = updateCopy + "  "+Math.floor(percentageDownLoaded)+"%";
+        mediaList.children[i].children[2].value = percentageDownLoaded;
       }
     }
-
-    //console.log(updateCopy + "  "+ percentageDownLoaded+"%");
-
   }
 
-  var _onFileDownloaded = function(downloadedFile, error){
+  var _onFileDownloaded = function(urlObj, message, error){
     console.log(error);
     if((error && error.message != 'paused') ){
+
 
     }else if(error && error.message == 'paused'){
       return;
     }
     else{
-
       if(!currentJsonUrlObj){
         currentJsonUrlObj = {};
         currentJsonUrlObj.urls = [];
       }
-
-      currentJsonUrlObj.urls.push( {"mediaurl":downloadedFile.mediaurl,
-                                    "title":downloadedFile.title,
-                                    "desc":downloadedFile.desc} );
-
-      //currentJsonUrlObj.urls.push( {"mediaurl":downloadedFile.remoteUrl} );
-
+      currentJsonUrlObj.urls.push( {"mediaurl":urlObj.mediaurl,"title":urlObj.title,"desc":urlObj.desc} );
       _writeJsonToDisk(currentJsonUrlObj);
+      noOfMediaFilesDownloaded++;
 
-      console.log(downloadedFile);
+      for(var i=0; i<mediaList.children.length; i++){
+        if(mediaList.children[i].urlObj.title === urlObj.title){
+          mediaList.children[i].classList.add('dlComplete');
+          mediaList.children[i].children[1].innerHTML = message;
+          // put tick by download
+        }
+      }
 
+      if(noOfMediaFilesDownloaded === totalMediaFilesToDownload){
+        // Start transcoding the files
+      }else{
+        var fileName = filesToDownloadArray[noOfMediaFilesDownloaded].title;
+        _startDownloadOfFile(filesToDownloadArray[noOfMediaFilesDownloaded], App.downloadFolder+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
+      }
     }
   }
 
@@ -269,6 +362,22 @@ var DownloadViewController = DownloadViewController || function(){
         arr.splice(i, 1);
       }
     }
+  };
+
+
+  var _convertVideo = function(){
+    new VideoConverter(appDataPath+"uncle_test.ts", appDataPath+"uncle_test_normal_32.mp4", null, _onConvertProgress, _onConvertComplete, _onConvertError);
+  };
+
+  var _onConvertError = function(error){
+    console.log("error = "+error);
+  };
+  var _onConvertProgress = function(progress){
+    console.log("converting file = "+progress.percentComplete+"  "+progress.eta);
+
+  };
+  var _onConvertComplete = function(){
+    console.log("conversion Complete");
   };
 
   var destroy = function(){

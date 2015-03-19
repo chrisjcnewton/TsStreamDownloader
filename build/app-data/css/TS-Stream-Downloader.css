@@ -1,1 +1,239 @@
-html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,canvas,details,embed,figure,figcaption,footer,header,hgroup,menu,nav,output,ruby,section,summary,time,mark,audio,video{margin:0;padding:0;border:0;font-size:100%;font:inherit;vertical-align:baseline}article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section{display:block}body{line-height:1;-webkit-tap-highlight-color:transparent}html{font-size:100%}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}table{border-collapse:collapse;border-spacing:0}@-webkit-keyframes animate-stripes{100%{background-position:-25px 0px}}*{-webkit-font-smoothing:antialiased}body{overflow-x:hidden}button{padding:0}.viewContent{width:100%;height:100%;position:absolute;margin:auto;top:0;left:0;bottom:0;right:0;transition:transform 0.5s ease-in-out, background-color 0.1s ease-in-out;z-index:-1}progress:not([value]){width:200px;height:4px;background-color:rgba(255,255,255,0.5);background-image:linear-gradient(-45deg, #d40511 25%, transparent 25%, transparent 50%, #d40511 50%, #d40511 75%, transparent 75%, transparent);background-size:25px 25px;-webkit-animation:animate-stripes 0.5s linear infinite}progress:not([value])::-webkit-progress-bar{background-color:transparent}progress[value]{-webkit-appearance:none;height:4px}progress[value]::-webkit-progress-bar{background-color:rgba(255,255,255,0.5)}progress[value]::-webkit-progress-value{background-color:red}.dialog{width:27em;height:15em;background-color:rgba(255,255,255,0.95);position:absolute;margin:auto;top:0;left:0;bottom:0;right:0;font-family:"Frutiger-Light-Cn"}.dialog .dialogInner{position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);width:100%}.dialog p{font-size:1.2em;text-align:center;padding-bottom:1em}.dialog button{min-width:6em;height:2.2em;margin:10px 10px 10px 0;display:none;border:none;background-color:red;color:white;cursor:pointer;font-family:"Frutiger-Light-Cn";font-size:1em;text-transform:uppercase}.dialog .buttonsBar{margin:0 auto;display:table}.dialog .progressArea{display:none;padding:0 1.5em}.dialog .progressArea progress[value],.dialog .progressArea progress:not([value]){width:100%}.dialog .progressArea .dialogProgressCopy{margin:0.5em 0 1em 0}.dialog .isVisible{display:initial}.dialog .progressArea.isVisible{display:block}
+/**
+ * Eric Meyer's Reset CSS v2.0 (http://meyerweb.com/eric/tools/css/reset/)
+ * http://cssreset.com
+ */
+/* line 6, ../../../src/sass/partials/_reset.scss */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+}
+
+/* HTML5 display-role reset for older browsers */
+/* line 27, ../../../src/sass/partials/_reset.scss */
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+  display: block;
+}
+
+/* line 31, ../../../src/sass/partials/_reset.scss */
+body {
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* line 35, ../../../src/sass/partials/_reset.scss */
+html {
+  font-size: 100%;
+}
+
+/* line 38, ../../../src/sass/partials/_reset.scss */
+blockquote, q {
+  quotes: none;
+}
+
+/* line 41, ../../../src/sass/partials/_reset.scss */
+blockquote:before, blockquote:after,
+q:before, q:after {
+  content: '';
+  content: none;
+}
+
+/* line 46, ../../../src/sass/partials/_reset.scss */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/*
+@font-face {
+  font-family: "Frutiger-Black-Cn";
+  src: url("../fonts/FrutigerLTStd-BlackCn.otf");
+}
+@font-face {
+  font-family: "Frutiger-Bold";
+  src: url("../fonts/FrutigerLTStd-Bold.otf");
+}
+@font-face {
+  font-family: "Frutiger-Light";
+  src: url("../fonts/FrutigerLTStd-Light.otf");
+}
+@font-face {
+  font-family: "Frutiger-Light-Cn";
+  src: url("../fonts/FrutigerLTStd-LightCn.otf");
+}
+@font-face {
+  font-family: "Frutiger-Roman";
+  src: url("../fonts/FrutigerLTStd-Roman.otf");
+}
+*/
+@-webkit-keyframes animate-stripes {
+  100% {
+    background-position: -25px 0px;
+  }
+}
+/* line 30, ../../../src/sass/partials/_base.scss */
+* {
+  -webkit-font-smoothing: antialiased;
+}
+
+/* line 34, ../../../src/sass/partials/_base.scss */
+body {
+  overflow-x: hidden;
+}
+
+/* line 38, ../../../src/sass/partials/_base.scss */
+button {
+  padding: 0;
+}
+
+/* line 42, ../../../src/sass/partials/_base.scss */
+.viewContent {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  margin: auto;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  transition: transform 0.5s ease-in-out, background-color 0.1s ease-in-out;
+  z-index: -1;
+}
+
+/* line 57, ../../../src/sass/partials/_base.scss */
+progress:not([value]) {
+  width: 200px;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.5);
+  background-image: linear-gradient(-45deg, #d40511 25%, transparent 25%, transparent 50%, #d40511 50%, #d40511 75%, transparent 75%, transparent);
+  background-size: 25px 25px;
+  -webkit-animation: animate-stripes 0.5s linear infinite;
+}
+
+/* line 65, ../../../src/sass/partials/_base.scss */
+progress:not([value])::-webkit-progress-bar {
+  background-color: transparent;
+}
+
+/* line 71, ../../../src/sass/partials/_base.scss */
+progress[value] {
+  -webkit-appearance: none;
+  height: 4px;
+}
+
+/* line 76, ../../../src/sass/partials/_base.scss */
+progress[value]::-webkit-progress-bar {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* line 80, ../../../src/sass/partials/_base.scss */
+progress[value]::-webkit-progress-value {
+  background-color: red;
+}
+
+/* line 1, ../../../src/sass/partials/_dialog.scss */
+.dialog {
+  width: 27em;
+  height: 15em;
+  background-color: rgba(255, 255, 255, 0.95);
+  position: absolute;
+  margin: auto;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  font-family: "Frutiger-Light-Cn";
+}
+/* line 13, ../../../src/sass/partials/_dialog.scss */
+.dialog .dialogInner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+}
+/* line 21, ../../../src/sass/partials/_dialog.scss */
+.dialog p {
+  font-size: 1.2em;
+  text-align: center;
+  padding-bottom: 1em;
+}
+/* line 29, ../../../src/sass/partials/_dialog.scss */
+.dialog button {
+  min-width: 6em;
+  height: 2.2em;
+  margin: 10px 10px 10px 0;
+  display: none;
+  border: none;
+  background-color: red;
+  color: white;
+  cursor: pointer;
+  font-family: "Frutiger-Light-Cn";
+  font-size: 1em;
+  text-transform: uppercase;
+}
+/* line 43, ../../../src/sass/partials/_dialog.scss */
+.dialog .buttonsBar {
+  margin: 0 auto;
+  display: table;
+}
+/* line 48, ../../../src/sass/partials/_dialog.scss */
+.dialog .progressArea {
+  display: none;
+  padding: 0 1.5em;
+}
+/* line 53, ../../../src/sass/partials/_dialog.scss */
+.dialog .progressArea progress[value], .dialog .progressArea progress:not([value]) {
+  width: 100%;
+}
+/* line 59, ../../../src/sass/partials/_dialog.scss */
+.dialog .progressArea .dialogProgressCopy {
+  margin: 0.5em 0 1em 0;
+}
+/* line 68, ../../../src/sass/partials/_dialog.scss */
+.dialog .isVisible {
+  display: initial;
+}
+/* line 72, ../../../src/sass/partials/_dialog.scss */
+.dialog .progressArea.isVisible {
+  display: block;
+}
+
+/* line 3, ../../../src/sass/partials/_download.scss */
+.downloadView #mediaList li {
+  background-color: rgba(255, 0, 0, 0.2);
+  padding: 1em;
+}
+/* line 7, ../../../src/sass/partials/_download.scss */
+.downloadView #mediaList .mediaLabel {
+  font-weight: bold;
+  padding: 0 0 0.3em 0;
+}
+/* line 15, ../../../src/sass/partials/_download.scss */
+.downloadView #mediaList progress {
+  width: 100%;
+}
+/* line 19, ../../../src/sass/partials/_download.scss */
+.downloadView #mediaList .dlComplete {
+  background-color: rgba(0, 255, 0, 0.2);
+}
+/* line 21, ../../../src/sass/partials/_download.scss */
+.downloadView #mediaList .dlComplete progress[value]::-webkit-progress-value {
+  background-color: green;
+}

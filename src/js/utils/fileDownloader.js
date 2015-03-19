@@ -11,9 +11,10 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
   var totalSizeOfFile;
   var req;
   var nothingToDownload = false;
+  var fileNotFound = false;
   var dppError = false;
   var dppErrorBody = "";
-  var isRedirect = false;
+
 
   fs.stat(targetFilePath, function(err, stats){
     if(err){
@@ -32,7 +33,7 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
 
 
   function makeFileRequest(){
-    theDownloadedFile.urlObj = urlObj;
+    //theDownloadedFile.urlObj = urlObj;
     var theUrl = urlObj.mediaurl;
   //  var theUrl = "http://192.168.1.69:9000/web/media/122.TS";
     req = request({
@@ -50,16 +51,29 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
         var contentType = data.headers['content-type'];
         console.log(contentType);
 
-        if(contentType == "text/plain" && data.headers['refresh'] != null){
-          urlObj.mediaurl = (data.headers['refresh']).split('=')[1];
-          isRedirect = true;
+        if(data.statusMessage == "Not Found"){
+          var error = {'message':'Not Found'};
+          onErrorCallback(error, urlObj);
+          fileNotFound = true;
+          fs.unlink(targetFilePath);
           req.abort();
-          makeFileRequest();
+
           return;
         }
+
+        var contentLengthHeader = data.headers['content-length'];
+        var contentRangeHeader = data.headers['content-range'];
+
+        if(!contentLengthHeader && contentRangeHeader){
+          len = parseInt( (data.headers['content-range']).split('/')[1], 10);
+        }
+        else if(contentLengthHeader){
+          len = parseInt(data.headers['content-length'], 10);
+        }
+
         //len = parseInt(data.headers['content-length'], 10);
 
-        len = parseInt( (data.headers['content-range']).split('/')[1], 10);
+        //len = parseInt( (data.headers['content-range']).split('/')[1], 10);
         console.log(len);
         cur = 0;
         total = len / BYTES_IN_MEGABYTE;
@@ -87,22 +101,27 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
 
     req.on('end', function()
     {
-        if(isRedirect) return;
+
         var error = null;
+        var message = "File downloaded successfully";
         if(nothingToDownload){
           console.log("FileDownloader: File already Downloaded");
-        }else if(userInitiatedCancel){
+          message = "File already Downloaded";
+        }else if(fileNotFound){
+          return;
+        }
+        else if(userInitiatedCancel){
           error = {'message':'paused'};
         }else if(dppError){
           error = {'message':dppErrorBody};
           console.log(dppErrorBody);
         }
-        onCompleteCallback(theDownloadedFile, error);
+        onCompleteCallback(urlObj, message, error);
     });
 
     req.on("error", function(e){
         console.log(e);
-        onErrorCallback(e);
+        onErrorCallback(e, urlObj);
     });
   }
 

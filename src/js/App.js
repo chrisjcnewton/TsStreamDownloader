@@ -7,7 +7,9 @@ var App = App || (function(){
   var algorithm = 'aes-256-ctr';
 
   //var serverUrl = "http://localhost:8888/DLNA-SERVER/endpoint.html";
-  var serverUrl = "http://192.168.1.69/browse/index.jim";
+  var serverUrl = "http://192.168.1.69/";
+  var downloadFolder = "/Users/cnewton/Movies/";
+  var mediaFolder = "";
 
   var viewControllerArray = [];
 
@@ -153,6 +155,7 @@ var App = App || (function(){
 
   return{
     serverUrl:serverUrl,
+    downloadFolder:downloadFolder,
     isNetworkConnected:isNetworkConnected,
     startViewController:startViewController,
     getItemFromStorage:getItemFromStorage,
