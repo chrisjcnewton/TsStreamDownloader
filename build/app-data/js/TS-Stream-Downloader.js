@@ -427,9 +427,9 @@ var DownloadViewController = DownloadViewController || function(){
 
     mediaList = document.querySelector('#mediaList');
 
-    _getCurrentUrls();
+    //_getCurrentUrls();
 
-    //_convertVideo();
+    _convertVideo();
 /*
     totalMediaFilesToDownload = testData.urls.length;
     filesToDownloadArray = testData.urls;
@@ -746,7 +746,7 @@ var DownloadViewController = DownloadViewController || function(){
 
 
   var _convertVideo = function(){
-    new VideoConverter(appDataPath+"uncle_test.ts", appDataPath+"uncle_test_normal_32.mp4", null, _onConvertProgress, _onConvertComplete, _onConvertError);
+    new VideoConverter(App.downloadFolder+"Little Fockers_20150107_2313.ts", App.downloadFolder+"Little Fockers_20150107_2313_normal.mp4", null, _onConvertProgress, _onConvertComplete, _onConvertError);
   };
 
   var _onConvertError = function(error){
