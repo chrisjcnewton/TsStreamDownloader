@@ -8,7 +8,7 @@ var App = App || (function(){
 
   //var serverUrl = "http://localhost:8888/DLNA-SERVER/endpoint.html";
   var serverUrl = "http://192.168.1.69/";
-  var downloadFolder = "/Users/cnewton/Movies/";
+  var downloadFolder = "/Users/chrisnewton/Movies/";
   var mediaFolder = "";
 
   var viewControllerArray = [];
@@ -427,14 +427,14 @@ var DownloadViewController = DownloadViewController || function(){
 
     mediaList = document.querySelector('#mediaList');
 
-    //_getCurrentUrls();
+    _getCurrentUrls();
 
     //_convertVideo();
-
+/*
     totalMediaFilesToDownload = testData.urls.length;
     filesToDownloadArray = testData.urls;
     _downloadMediaFiles();
-
+*/
   };
 
 
@@ -553,12 +553,20 @@ var DownloadViewController = DownloadViewController || function(){
 
           //var dlnaUrl = "http://192.168.1.69/browse/download.jim?file="+file+"&base=192.168.1.69";
 
-          var dlnaUrl = App.serverUrl+'browse/file.jim?file=' + file+ '&type=' + type;
+          var fileUrl = App.serverUrl+'browse/file.jim?file=' + file+ '&type=' + type;
 
-          request(dlnaUrl, function (error, response, data) {
+          request(fileUrl, function (error, response, data) {
             if (!error && response.statusCode == 200) {
               noOfLinksReceived++;
               var fileInfoHTML = parser.parseFromString(response.body, "text/html");
+              var fileInfoHTMLBody = fileInfoHTML.body;
+
+              var dlnaUrl = fileInfoHTMLBody.querySelector('a').href;
+              var title = decodeURI(((fileInfoHTMLBody.querySelector('.bmp.va')).getAttribute('src')).split('/')[3]);
+              //console.log( title);
+              //console.log(dlnaUrl);
+              var desc = "";
+            //  console.log(fileInfoHTML);
 
               // TODO: need to go into dom for this info and get dlnaurl, title and desc
 

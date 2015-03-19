@@ -8,7 +8,7 @@ var App = App || (function(){
 
   //var serverUrl = "http://localhost:8888/DLNA-SERVER/endpoint.html";
   var serverUrl = "http://192.168.1.69/";
-  var downloadFolder = "/Users/cnewton/Movies/";
+  var downloadFolder = "/Users/chrisnewton/Movies/";
   var mediaFolder = "";
 
   var viewControllerArray = [];
