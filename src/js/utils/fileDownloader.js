@@ -34,6 +34,7 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
 
   function makeFileRequest(){
     //theDownloadedFile.urlObj = urlObj;
+    urlObj.targetPath = targetFilePath;
     var theUrl = urlObj.mediaurl;
   //  var theUrl = "http://192.168.1.69:9000/web/media/122.TS";
     req = request({

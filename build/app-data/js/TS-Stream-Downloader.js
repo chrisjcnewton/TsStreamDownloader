@@ -244,6 +244,7 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
 
   function makeFileRequest(){
     //theDownloadedFile.urlObj = urlObj;
+    urlObj.targetPath = targetFilePath;
     var theUrl = urlObj.mediaurl;
   //  var theUrl = "http://192.168.1.69:9000/web/media/122.TS";
     req = request({
@@ -390,6 +391,8 @@ var DownloadViewController = DownloadViewController || function(){
   var totalMediaFilesToDownload = 0;
   var noOfMediaFilesDownloaded = 0;
   var filesToDownloadArray;
+  var totalNoOfFilesToTranscode = 0;
+  var noOfFilesTranscoded = 0;
 
   var testData = {
                   urls:[
@@ -427,9 +430,9 @@ var DownloadViewController = DownloadViewController || function(){
 
     mediaList = document.querySelector('#mediaList');
 
-    //_getCurrentUrls();
+    _getCurrentUrls();
 
-    _convertVideo();
+    //_convertVideo();
 /*
     totalMediaFilesToDownload = testData.urls.length;
     filesToDownloadArray = testData.urls;
@@ -606,11 +609,17 @@ var DownloadViewController = DownloadViewController || function(){
     console.log("noOfMediaFilesDownloaded ",noOfMediaFilesDownloaded);
     console.log("totalMediaFilesToDownload ",totalMediaFilesToDownload);
 
+    var movieToGet;
+
     for(var i=0; i<filesToDownloadArray.length; i++){
       var mediaElement = document.createElement('li');
       mediaElement.urlObj = filesToDownloadArray[i];
 
       var fileName = filesToDownloadArray[i].title;
+
+      if(fileName.indexOf("Skyfall") != -1){
+        movieToGet = i;
+      }
 
       var mediaLabel = document.createElement('p');
       mediaLabel.innerHTML = fileName;
@@ -627,9 +636,10 @@ var DownloadViewController = DownloadViewController || function(){
       mediaList.appendChild(mediaElement);
     }
 
-    var fileName = filesToDownloadArray[noOfMediaFilesDownloaded].title;
-    _startDownloadOfFile(filesToDownloadArray[noOfMediaFilesDownloaded], App.downloadFolder+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
-
+    //var fileName = filesToDownloadArray[noOfMediaFilesDownloaded].title;
+  //  _startDownloadOfFile(filesToDownloadArray[noOfMediaFilesDownloaded], App.downloadFolder+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
+    var fileName = filesToDownloadArray[movieToGet].title;
+    _startDownloadOfFile(filesToDownloadArray[movieToGet], App.downloadFolder+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
   };
 
   var _startDownloadOfFile = function(urlObj, targetFilePath, downloadingCallBack, onCompleteCallback, onErrorCallback){
@@ -673,7 +683,7 @@ var DownloadViewController = DownloadViewController || function(){
         currentJsonUrlObj = {};
         currentJsonUrlObj.urls = [];
       }
-      currentJsonUrlObj.urls.push( {"mediaurl":urlObj.mediaurl,"title":urlObj.title,"desc":urlObj.desc} );
+      currentJsonUrlObj.urls.push( {"mediaurl":urlObj.mediaurl,"title":urlObj.title,"desc":urlObj.desc, "localFile":urlObj.targetPath} );
       _writeJsonToDisk(currentJsonUrlObj);
       noOfMediaFilesDownloaded++;
 
@@ -685,8 +695,12 @@ var DownloadViewController = DownloadViewController || function(){
         }
       }
 
-      if(noOfMediaFilesDownloaded === totalMediaFilesToDownload){
+      //if(noOfMediaFilesDownloaded === totalMediaFilesToDownload){
+      if(noOfMediaFilesDownloaded === 1){
         // Start transcoding the files
+        totalNoOfFilesToTranscode = currentJsonUrlObj.urls.length;
+        _convertVideo(currentJsonUrlObj.urls[noOfFilesTranscoded].localFile, currentJsonUrlObj.urls[noOfFilesTranscoded].localFile+".mp4");
+
       }else{
         var fileName = filesToDownloadArray[noOfMediaFilesDownloaded].title;
         _startDownloadOfFile(filesToDownloadArray[noOfMediaFilesDownloaded], App.downloadFolder+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
@@ -745,8 +759,8 @@ var DownloadViewController = DownloadViewController || function(){
   };
 
 
-  var _convertVideo = function(){
-    new VideoConverter(App.downloadFolder+"Little Fockers_20150107_2313.ts", App.downloadFolder+"Little Fockers_20150107_2313_normal.mp4", null, _onConvertProgress, _onConvertComplete, _onConvertError);
+  var _convertVideo = function(srcFile, destFile){
+    new VideoConverter(srcFile, destFile, null, _onConvertProgress, _onConvertComplete, _onConvertError);
   };
 
   var _onConvertError = function(error){
@@ -758,6 +772,13 @@ var DownloadViewController = DownloadViewController || function(){
   };
   var _onConvertComplete = function(){
     console.log("conversion Complete");
+    noOfFilesTranscoded++;
+    if(noOfFilesTranscoded == 1){
+    //if(noOfFilesTranscoded == totalNoOfFilesToTranscode){
+      // FInished
+    }else{
+      _convertVideo(currentJsonUrlObj.urls[noOfFilesTranscoded].localFile, currentJsonUrlObj.urls[noOfFilesTranscoded].localFile+".mp4");
+    }
   };
 
   var destroy = function(){
