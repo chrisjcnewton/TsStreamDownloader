@@ -7,7 +7,8 @@ var App = App || (function(){
   var algorithm = 'aes-256-ctr';
 
   //var serverUrl = "http://localhost:8888/DLNA-SERVER/endpoint.html";
-  var serverUrl = "http://192.168.1.69/";
+  
+  var serverUrl = "http://192.168.1.37/";
   var downloadFolder = "/Users/chrisnewton/Movies/";
   var mediaFolder = "";
 
@@ -617,7 +618,7 @@ var DownloadViewController = DownloadViewController || function(){
 
       var fileName = filesToDownloadArray[i].title;
 
-      if(fileName.indexOf("Skyfall") != -1){
+      if(fileName.indexOf("Drive") != -1){
         movieToGet = i;
       }
 
