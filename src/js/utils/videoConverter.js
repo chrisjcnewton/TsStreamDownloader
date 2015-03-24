@@ -2,7 +2,8 @@ var VideoConverter = VideoConverter || function(sourceVideoPath, targetFilePath,
 
   var hbjs = require("handbrake-js");
 
-  hbjs.spawn({ input: sourceVideoPath, output: targetFilePath, preset:"Normal"})
+  //hbjs.spawn({ input: sourceVideoPath, output: targetFilePath, preset:"Normal", rate:25}) // Good for HD TS Files
+  hbjs.spawn({ input: sourceVideoPath, output: targetFilePath, preset:"Normal", width:1024, rate:25}) // Good for SD TS Files  
     .on("error", function(err){
       // invalid user input, no video found etc
       onErrorCallback(err);

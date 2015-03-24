@@ -7,7 +7,7 @@ var App = App || (function(){
   var algorithm = 'aes-256-ctr';
 
   //var serverUrl = "http://localhost:8888/DLNA-SERVER/endpoint.html";
-  
+
   var serverUrl = "http://192.168.1.37/";
   var downloadFolder = "/Users/chrisnewton/Movies/";
   var mediaFolder = "";
@@ -354,7 +354,8 @@ var VideoConverter = VideoConverter || function(sourceVideoPath, targetFilePath,
 
   var hbjs = require("handbrake-js");
 
-  hbjs.spawn({ input: sourceVideoPath, output: targetFilePath, preset:"Normal"})
+  //hbjs.spawn({ input: sourceVideoPath, output: targetFilePath, preset:"Normal", rate:25}) // Good for HD TS Files
+  hbjs.spawn({ input: sourceVideoPath, output: targetFilePath, preset:"Normal", width:1024, rate:25}) // Good for SD TS Files  
     .on("error", function(err){
       // invalid user input, no video found etc
       onErrorCallback(err);
@@ -431,9 +432,9 @@ var DownloadViewController = DownloadViewController || function(){
 
     mediaList = document.querySelector('#mediaList');
 
-    _getCurrentUrls();
+    //_getCurrentUrls();
 
-    //_convertVideo();
+    _convertVideo(App.downloadFolder+'01.ts', App.downloadFolder+'01.mp4');
 /*
     totalMediaFilesToDownload = testData.urls.length;
     filesToDownloadArray = testData.urls;

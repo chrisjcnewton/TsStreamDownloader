@@ -57,9 +57,9 @@ var DownloadViewController = DownloadViewController || function(){
 
     mediaList = document.querySelector('#mediaList');
 
-    _getCurrentUrls();
+    //_getCurrentUrls();
 
-    //_convertVideo();
+    _convertVideo(App.downloadFolder+'01.ts', App.downloadFolder+'01.mp4');
 /*
     totalMediaFilesToDownload = testData.urls.length;
     filesToDownloadArray = testData.urls;
