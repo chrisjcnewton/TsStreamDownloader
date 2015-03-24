@@ -57,14 +57,29 @@ var DownloadViewController = DownloadViewController || function(){
 
     mediaList = document.querySelector('#mediaList');
 
-    //_getCurrentUrls();
+    var ipAddressInput = document.querySelector('#ipAddress');
+    var tsFolderInput = document.querySelector('#tsFolderLocation');
+    var mp4FolderInput = document.querySelector('#mp4FolderLocation');
+    var startButton = document.querySelector('#startButton');
 
-    _convertVideo(App.downloadFolder+'01.ts', App.downloadFolder+'01.mp4');
-/*
-    totalMediaFilesToDownload = testData.urls.length;
-    filesToDownloadArray = testData.urls;
-    _downloadMediaFiles();
-*/
+    ipAddressInput.value = localStorage.getItem('ipaddress');
+    tsFolderInput.value = localStorage.getItem('tsFolderPath');
+    mp4FolderInput.value = localStorage.getItem('mp4FolderPath');
+
+
+    startButton.addEventListener('click', function(){
+      localStorage.setItem('ipaddress', ipAddressInput.value);
+      localStorage.setItem('tsFolderPath', tsFolderInput.value);
+      localStorage.setItem('mp4FolderPath', mp4FolderInput.value);
+
+      App.serverUrl = ipAddressInput.value;
+      App.downloadFolder = tsFolderInput.value;
+
+      //_getCurrentUrls();
+
+      //_convertVideo(App.downloadFolder+'01.ts', App.downloadFolder+'01.mp4');
+
+    }, false);
   };
 
 
