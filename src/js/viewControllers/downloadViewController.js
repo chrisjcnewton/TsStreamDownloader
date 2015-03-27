@@ -210,14 +210,23 @@ var DownloadViewController = DownloadViewController || function(){
               var title = decodeURI(((fileInfoHTMLBody.querySelector('.bmp.va')).getAttribute('src')).split('/')[3]);
               //console.log( title);
               //console.log(dlnaUrl);
+
               var desc = "";
-              var definition = "HD";
+              var definition = "";
               var genre = "Film";
-            //  console.log(fileInfoHTML);
 
-              // TODO: need to go into dom for this info and get dlnaurl, title and desc
+              var tableHeaders = fileInfoHTMLBody.querySelectorAll('th');
+              for(var j=0; j< tableHeaders.length; j++){
+                var tableTitle = tableHeaders[j].innerHTML;
+                if(tableTitle.toLowerCase() == "synopsis"){
+                  desc = tableHeaders[j].parentNode.children[1].innerHTML;
+                }
+                if(tableTitle.toLowerCase() == "flags"){
+                  definition = tableHeaders[j].parentNode.children[1].innerHTML.substring(0,2);
+                }
+              }            
 
-              dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaUrl,"title":title,"desc":desc} );
+              dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaUrl,"title":title,"desc":desc, "definition":definition} );
 
               if(noOfLinksReceived == totalNoOfLinks){
                 callback(null, dlnaElemsJsonObj);
