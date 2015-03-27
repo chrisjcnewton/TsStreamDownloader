@@ -350,6 +350,12 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
 
 };
 
+var UpnpSearch = UpnpSearch || (function(){
+
+
+
+})();
+
 var VideoConverter = VideoConverter || function(sourceVideoPath, targetFilePath, videoOptions, convertingCallBack, onCompleteCallback, onErrorCallback){
 
   var hbjs = require("handbrake-js");
@@ -586,6 +592,8 @@ var DownloadViewController = DownloadViewController || function(){
               //console.log( title);
               //console.log(dlnaUrl);
               var desc = "";
+              var definition = "HD";
+              var genre = "Film";
             //  console.log(fileInfoHTML);
 
               // TODO: need to go into dom for this info and get dlnaurl, title and desc

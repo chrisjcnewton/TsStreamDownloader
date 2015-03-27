@@ -211,6 +211,8 @@ var DownloadViewController = DownloadViewController || function(){
               //console.log( title);
               //console.log(dlnaUrl);
               var desc = "";
+              var definition = "HD";
+              var genre = "Film";
             //  console.log(fileInfoHTML);
 
               // TODO: need to go into dom for this info and get dlnaurl, title and desc
