@@ -21,37 +21,6 @@ var DownloadViewController = DownloadViewController || function(){
   var totalNoOfFilesToTranscode = 0;
   var noOfFilesTranscoded = 0;
 
-  var testData = {
-                  urls:[
-                    {
-                      title:"01.zip",
-                      desc:"01 desc",
-                      mediaurl:"http://localhost:8888/DLNA-SERVER/01.zip"
-                    },
-                    {
-                      title:"02.zip",
-                      desc:"02 desc",
-                      mediaurl:"http://localhost:8888/DLNA-SERVER/02.zip"
-                    },
-                    {
-                      title:"03.zip",
-                      desc:"03 desc",
-                      mediaurl:"http://localhost:8888/DLNA-SERVER/03.zip"
-                    },
-                    {
-                      title:"04.zip",
-                      desc:"04 desc",
-                      mediaurl:"http://localhost:8888/DLNA-SERVER/04.zip"
-                    },
-                    {
-                      title:"05.zip",
-                      desc:"05 desc",
-                      mediaurl:"http://localhost:8888/DLNA-SERVER/05.zip"
-                    }
-                  ]
-                };
-
-
   var create = function(extras){
     previousViewControllerName = extras? extras.previousViewControllerName : null;
 
@@ -74,8 +43,8 @@ var DownloadViewController = DownloadViewController || function(){
 
       App.serverUrl = ipAddressInput.value;
       App.downloadFolder = tsFolderInput.value;
-
-      //_getCurrentUrls();
+      console.log('BOOM');
+      _getCurrentUrls();
 
       //_convertVideo(App.downloadFolder+'01.ts', App.downloadFolder+'01.mp4');
 
@@ -166,10 +135,11 @@ var DownloadViewController = DownloadViewController || function(){
 
 
   var _getDlnaUrls = function(callback){
+    console.log(App.serverUrl+indexPath);
     request(App.serverUrl+indexPath, function (error, response, data) {
 
       if (!error && response.statusCode == 200) {
-        //console.log(response.body);
+        console.log(response.body);
 
         var parser = new DOMParser();
         var viewContentHTML = parser.parseFromString(response.body, "text/html");
@@ -224,7 +194,7 @@ var DownloadViewController = DownloadViewController || function(){
                 if(tableTitle.toLowerCase() == "flags"){
                   definition = tableHeaders[j].parentNode.children[1].innerHTML.substring(0,2);
                 }
-              }            
+              }
 
               dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaUrl,"title":title,"desc":desc, "definition":definition} );
 
@@ -245,6 +215,7 @@ var DownloadViewController = DownloadViewController || function(){
         //console.log(JSON.stringify(dlnaElemsJsonObj));
 
       }else if(error){
+        console.log(error);
         callback(error, null);
       }
 

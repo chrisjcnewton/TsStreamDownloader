@@ -351,8 +351,19 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
 };
 
 var UpnpSearch = UpnpSearch || (function(){
-
-
+/*
+  var Ssdp = require('upnp-ssdp');
+  var client = Ssdp();
+  client.on('up', function (address) {
+      console.log('server found', address);
+  });
+  client.on('down', function (address) {
+      console.log('server ' + address + ' not responding anymore');
+  });
+  client.on('error', function (err) {
+      console.log('error initiating SSDP search', err);
+  });
+  client.search('device:server');*/
 
 })();
 
@@ -402,37 +413,6 @@ var DownloadViewController = DownloadViewController || function(){
   var totalNoOfFilesToTranscode = 0;
   var noOfFilesTranscoded = 0;
 
-  var testData = {
-                  urls:[
-                    {
-                      title:"01.zip",
-                      desc:"01 desc",
-                      mediaurl:"http://localhost:8888/DLNA-SERVER/01.zip"
-                    },
-                    {
-                      title:"02.zip",
-                      desc:"02 desc",
-                      mediaurl:"http://localhost:8888/DLNA-SERVER/02.zip"
-                    },
-                    {
-                      title:"03.zip",
-                      desc:"03 desc",
-                      mediaurl:"http://localhost:8888/DLNA-SERVER/03.zip"
-                    },
-                    {
-                      title:"04.zip",
-                      desc:"04 desc",
-                      mediaurl:"http://localhost:8888/DLNA-SERVER/04.zip"
-                    },
-                    {
-                      title:"05.zip",
-                      desc:"05 desc",
-                      mediaurl:"http://localhost:8888/DLNA-SERVER/05.zip"
-                    }
-                  ]
-                };
-
-
   var create = function(extras){
     previousViewControllerName = extras? extras.previousViewControllerName : null;
 
@@ -455,8 +435,8 @@ var DownloadViewController = DownloadViewController || function(){
 
       App.serverUrl = ipAddressInput.value;
       App.downloadFolder = tsFolderInput.value;
-
-      //_getCurrentUrls();
+      console.log('BOOM');
+      _getCurrentUrls();
 
       //_convertVideo(App.downloadFolder+'01.ts', App.downloadFolder+'01.mp4');
 
@@ -547,10 +527,11 @@ var DownloadViewController = DownloadViewController || function(){
 
 
   var _getDlnaUrls = function(callback){
+    console.log(App.serverUrl+indexPath);
     request(App.serverUrl+indexPath, function (error, response, data) {
 
       if (!error && response.statusCode == 200) {
-        //console.log(response.body);
+        console.log(response.body);
 
         var parser = new DOMParser();
         var viewContentHTML = parser.parseFromString(response.body, "text/html");
@@ -591,14 +572,23 @@ var DownloadViewController = DownloadViewController || function(){
               var title = decodeURI(((fileInfoHTMLBody.querySelector('.bmp.va')).getAttribute('src')).split('/')[3]);
               //console.log( title);
               //console.log(dlnaUrl);
+
               var desc = "";
-              var definition = "HD";
+              var definition = "";
               var genre = "Film";
-            //  console.log(fileInfoHTML);
 
-              // TODO: need to go into dom for this info and get dlnaurl, title and desc
+              var tableHeaders = fileInfoHTMLBody.querySelectorAll('th');
+              for(var j=0; j< tableHeaders.length; j++){
+                var tableTitle = tableHeaders[j].innerHTML;
+                if(tableTitle.toLowerCase() == "synopsis"){
+                  desc = tableHeaders[j].parentNode.children[1].innerHTML;
+                }
+                if(tableTitle.toLowerCase() == "flags"){
+                  definition = tableHeaders[j].parentNode.children[1].innerHTML.substring(0,2);
+                }
+              }
 
-              dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaUrl,"title":title,"desc":desc} );
+              dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaUrl,"title":title,"desc":desc, "definition":definition} );
 
               if(noOfLinksReceived == totalNoOfLinks){
                 callback(null, dlnaElemsJsonObj);
@@ -617,6 +607,7 @@ var DownloadViewController = DownloadViewController || function(){
         //console.log(JSON.stringify(dlnaElemsJsonObj));
 
       }else if(error){
+        console.log(error);
         callback(error, null);
       }
 
