@@ -1,0 +1,82 @@
+/* Generic context menu styles */
+.contextMenu {
+	position: absolute;
+	width: 150px;
+	z-index: 99999;
+	border: solid 1px #CCC;
+	background: #EEE;
+	padding: 0px;
+	margin: 0px;
+	display: none;
+}
+
+.contextMenu LI {
+	list-style: none;
+	padding: 0px;
+	margin: 0px;
+}
+
+.contextMenu A {
+	color: #333;
+	text-decoration: none;
+	display: block;
+	line-height: 20px;
+	height: 20px;
+	background-position: 6px center;
+	background-repeat: no-repeat;
+	outline: none;
+	padding: 1px 5px;
+	padding-left: 28px;
+}
+
+.contextMenu LI.hover A {
+	color: #FFF;
+	background-color: #3399FF;
+}
+
+.contextMenu LI.disabled A {
+	color: #AAA;
+	cursor: default;
+}
+
+.contextMenu LI.hover.disabled A {
+	background-color: transparent;
+}
+
+.contextMenu LI.separator {
+	border-top: solid 1px #CCC;
+}
+
+/*
+	Adding Icons
+	
+	You can add icons to the context menu by adding
+	classes to the respective LI element(s)
+*/
+
+.contextMenu LI.pwedit A { background-image: url(/img/context/page_white_edit.png); }
+.contextMenu LI.pwcopy A { background-image: url(/img/context/page_white_copy.png); }
+.contextMenu LI.pwpaste A { background-image: url(/img/context/page_white_paste.png); }
+.contextMenu LI.pwdelete A { background-image: url(/img/context/page_white_delete.png); }
+.contextMenu LI.edit A { background-image: url(/img/context/edit.png); }
+.contextMenu LI.copy A { background-image: url(/img/context/copy.png); }
+.contextMenu LI.paste A { background-image: url(/img/context/paste.png); }
+.contextMenu LI.delete A { background-image: url(/img/context/delete.png); }
+.contextMenu LI.cut A { background-image: url(/img/context/cut.png); }
+.contextMenu LI.quit A { background-image: url(/img/context/door.png); }
+.contextMenu LI.compress A { background-image: url(/img/context/compress.png); }
+.contextMenu LI.compressr A { background-image: url(/img/context/compressr.png); }
+.contextMenu LI.dedup A { background-image: url(/img/context/dedup.png); }
+.contextMenu LI.decrypt A { background-image: url(/img/context/decrypt.png); }
+.contextMenu LI.decryptr A { background-image: url(/img/context/decryptr.png); }
+.contextMenu LI.mpg A { background-image: url(/img/context/mpg.png); }
+.contextMenu LI.mp3 A { background-image: url(/img/context/mp3.png); }
+.contextMenu LI.clock A { background-image: url(/img/context/clock.png); }
+.contextMenu LI.thm A { background-image: url(/img/context/thumb.png); }
+.contextMenu LI.bookmark A { background-image: url(/img/context/bookmark.png); }
+.contextMenu LI.lock A { background-image: url(/img/context/lock.png); }
+.contextMenu LI.rename A { background-image: url(/img/context/rename.png); }
+.contextMenu LI.download A { background-image: url(/img/context/download.png); }
+.contextMenu LI.new A { background-image: url(/img/context/new.png); }
+
+

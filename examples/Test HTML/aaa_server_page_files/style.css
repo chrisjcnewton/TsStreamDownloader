@@ -1,0 +1,550 @@
+html body
+{
+	line-height: 1.55em;
+	font-family: "Lucida Grande", verdana, lucida, helvetica, sans-serif;
+	background-color: #f8f8f8;
+	margin: 1em;
+	padding: 0;
+	font-size: small;
+}
+
+html>body
+{
+	font-size: small;
+}
+
+.left, .cleft
+{
+	float: left;
+}
+.cleft
+{
+	clear: left;
+}
+.right, .cright
+{
+	float: right;
+}
+.cright
+{
+	clear: right;
+}
+
+fieldset.left, fieldset.cleft
+{
+	display: inline;
+}
+
+div.container
+{
+	position: relative;
+	padding-left: 30px;
+	padding-right: 30px;
+	height: 116px;
+}
+
+div.container .left
+{
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	width: 30px;
+	height: 116px;
+}
+
+div.container .right
+{
+	position: absolute;
+	right: 0px;
+	top: 0px;
+	width: 30px;
+	height: 116px;
+}
+
+div.container .middle
+{
+	background-image: url('/images/154_1_00_WIN_MD116_2C.png');
+	background-repeat: repeat-x;
+	height: 116px;
+}
+
+div.container .usb
+{
+	position: absolute;
+	left: -5px;
+	top: 8px;
+}
+
+div.footer
+{
+	clear: both;
+	padding-top: 2em;
+}
+
+div.owarningbox
+{
+	background: url('/img/redshade.png') repeat-x;
+	padding: 0.5em;
+	margin: 1em;
+}
+
+div.warningbox
+{
+	width: 60%;
+	background: url('/img/redshade.png') repeat-x;
+	background-size: 100%;
+	#color: #005000;
+	border: 1px solid #7a4707;
+	padding: 10px;
+	position: relative;
+	top: -2px;
+	left: -2px;
+	font-weight: bold;
+	z-index: 30;
+	box-shadow: 2px 2px 11px #666;
+	-moz-box-shadow: 2px 2px 11px #666;
+	-webkit-box-shadow: 2px 2px 11px #666;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+}
+
+table
+{
+	empty-cells: show;
+}
+
+table.borders, table.borders td, table.borders th
+{
+	border: 1px solid #669933;
+	empty-cells: show;
+}
+
+.odd
+{
+	background: #ccff99;
+	color: black;
+}
+
+.even
+{
+	background: #ffffcc;
+	color: black;
+}
+
+.hover
+{
+	background: #f6ff5b;
+	color: black;
+}
+
+table td,table th
+{
+	font-size: small;
+}
+
+table th
+{
+	font-weight: bold;
+	text-align: left;
+}
+
+table.keyval th, th.key
+{
+	background: #ccff99;
+	font-weight: bold;
+	text-align: right;
+	color: black;
+	padding: 0.5em;
+}
+
+table.keyval td
+{
+	background: #ffffcc;
+	color: black;
+}
+
+pre, .pre, .prelike
+{
+        font-family: Consolas, 'Courier New', Courier, monospace;
+        color: black;
+        background: #f9d9b0 url('/img/prebg.png') repeat-x top;
+	line-height: 1.24;
+        padding: 3px 8px;
+        margin: 0 5em 1em 5em;
+        border-color: #f9d9b0;
+        border-bottom: 1px solid #f9bc6d;
+        border-top-left-radius: 4px;
+        -webkit-border-top-left-radius: 4px;
+        -moz-border-radius-topleft: 4px;
+        -khtml-border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+        -webkit-border-top-right-radius: 4px;
+        -moz-border-radius-topright: 4px;
+        -khtml-border-top-right-radius: 4px;
+}
+
+pre, .pre
+{
+	white-space: pre-wrap;
+	white-space: -moz-pre-wrap !important;
+	white-space: -pre-wrap;
+	white-space: -o-pre-wrap;
+	white-space: break-word;
+}
+
+.shadowbox
+{
+	background: #ccc;
+	position: relative;
+	width: 60%;
+	top: 2px;
+	left: 2px;
+}
+
+.shadowbox div
+{
+	background: white;
+	color: #005000;
+	border: 1px solid #7a4707;
+	padding: 10px;
+	position: relative;
+	top: -2px;
+	left: -2px;
+}
+
+:link:focus,
+:visited:focus,
+:link,
+:visited,
+:link:active,
+:visited:active
+{
+	text-decoration: none;
+	color: #1e5bbd;
+	background-color: transparent;
+}
+/*
+:link:hover,
+:visited:hover
+{
+	text-decoration: underline;
+	background-color: #b4d5ff;
+	color: #1559B3;
+}
+*/
+
+.blood
+{
+	color: #ff4000 !important;
+	background: transparent;
+}
+
+.filesize
+{
+	color: #6a6aff;
+	background: transparent;
+}
+
+.footnote, .bfootnote
+{
+	background: transparent;
+	font-size: 70%;
+	font-weight: bold;
+}
+
+.footnote
+{
+	color: #ff4000 !important;
+}
+
+tr.blueshade > td, .blueshade
+{
+	background: #b9daff !important;
+	color: black;
+}
+
+.yellowshade
+{
+	background: #f6ff5b;
+	color: black;
+}
+
+.pinkshade
+{
+	background: #ffccff;
+	color: black;
+}
+
+.strike
+{
+	text-decoration: line-through;
+}
+
+.greenshade
+{
+	background: #e4faa8;
+	color: black;
+}
+
+.orangeshade
+{
+	background: #ffeeaa;
+	color: black;
+}
+
+.redshade
+{
+	background: #ff4000;
+	color: white;
+}
+
+img.progress
+{
+	background: transparent url(/img/percentback.png) top left no-repeat;
+	padding: 0;
+	margin: 0;
+	background-position: 1px 0;
+}
+
+.va
+{
+	vertical-align: middle;
+}
+
+.block
+{
+	display: block;
+}
+
+.hidden
+{
+	display: none;
+}
+
+input.text
+{
+	padding: .4em;
+}
+
+.highlight
+{
+	background-color: yellow;
+}
+
+.focused
+{
+	border: 2px solid red;
+}
+
+div.cut, div.keep
+{
+	position: absolute;
+	top: 0px;
+	text-align: center;
+	overflow: hidden;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+}
+
+div.keep
+{
+	background: green;
+	color: white;
+}
+
+div.cut
+{
+	background: #ff4000;
+	color: black;
+}
+
+.ui-button-text
+{
+	font-size: inherit !important;
+}
+
+.ui-button, .ui-button-text
+{
+	padding: 0;
+	font-size: 12px;
+}
+
+.also
+{
+	font-size: 0.9em;
+	font-style: italic;
+	color: #333;
+	background: transparent;
+}
+
+div.toolbarouter
+{
+	position: relative;
+	z-index: 29;
+}
+
+div.toolbar
+{
+	position: absolute;
+	top: -20px;
+	left: 30px;
+	z-index: 29;
+	display: none;
+	width: 80%;
+	border: 1px solid #899caa;
+	box-shadow: 2px 2px 11px #666;
+	-moz-box-shadow: 2px 2px 11px #666;
+	-webkit-box-shadow: 2px 2px 11px #666;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+	margin-top: -1px;
+	background: #d2e0ea;
+	padding: 6px;
+}
+
+#status
+{
+	width: 60%;
+}
+
+span.toolbarcell
+{
+	float: left;
+	border-right: 1px solid #ccc;
+	text-align: center;
+	padding: 0 1em;
+}
+
+.tbhover
+{
+	background: #dfe8ef;
+	border-top: solid 1px #ccc;
+	border-left: solid 1px #ccc;
+}
+
+#tbstatus
+{
+	width: 100%;
+	border-top: 1px solid #ccc;
+	margin: 1em 0;
+	padding-top: 1em;
+}
+
+button.blue
+{
+	background: url(/img/gloss_wave_blue.png) repeat-x center;
+	border: 1px solid blue;
+	color: #ffffff;
+}
+
+button.green
+{
+	background: url(/img/gloss_wave_green.png) repeat-x center;
+	border: 1px solid green;
+	color: #ffffff;
+}
+
+button.red
+{
+	background: url(/img/gloss_wave_red.png) repeat-x center;
+	border: 1px solid green;
+	color: #ffffff;
+}
+
+div#restart_block
+{
+	text-align: center;
+	z-index: 31;
+	float: right;
+	width: 130px;
+	position: relative;
+	top: 20px;
+	background-color: #f8f8f8;
+	opacity: 0.9;
+	filter:alpha(opacity=90);
+}
+
+button#restart_humaxtv
+{
+	margin-bottom: 3px;
+}
+
+img.bmp, img.doublebmp
+{
+	transform: scaleY(-1);
+	-webkit-transform: scaleY(-1);
+	-o-transform: scaleY(-1);
+	height: 78px;
+	width: 140px;
+}
+
+img.doublebmp
+{
+	height: 156px;
+	width: 280px;
+}
+
+.relative
+{
+	position: relative;
+}
+
+span.foldernum
+{
+	display: none;
+	position: absolute;
+	left: 14px;
+	top: 9px;
+	color: white;
+	height: 15px;
+	line-height: 16px;
+	background-color: #CC0000;
+	background: linear-gradient(#FF0000, #CC0000) repeat scroll 0 0 #EEEEEE;
+	font-size: 10px;
+	border: 1px solid #660000;
+	padding: 0 2px 0 2px;
+	border-radius: 1em 1em 1em 1em;
+	-moz-border-radius: 1em;  
+	-webkit-border-radius: 1em;
+	border-top-right-radius: 1em;
+	border-top-left-radius: 1em;
+	border-bottom-right-radius: 1em;
+	border-bottom-left-radius: 1em;
+}
+
+#tbdiskspace
+{
+	float: right;
+	padding-top: 1.2em;
+	position: relative;
+	right: -10px;
+}
+
+#tbdiskpie
+{
+	float: right;
+	width: 150px;
+	height: 150px;
+	position: relative;
+	right: -10px;
+}
+
+.tbdiskpie
+{
+	top: -10px !important;
+}
+
+#usbejectinfo
+{
+	position: relative;
+	border: 1px solid #899caa;
+	box-shadow: 2px 2px 11px #666;
+	-moz-box-shadow: 2px 2px 11px #666;
+	-webkit-box-shadow: 2px 2px 11px #666;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+	background: #d2e0ea;
+	padding: 6px;
+	z-index: 40;
+}
+
