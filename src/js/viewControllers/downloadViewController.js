@@ -11,7 +11,9 @@ var DownloadViewController = DownloadViewController || function(){
   var appDataPath = gui.App.dataPath + "/";
   //var cwd = process.cwd();
   var urlJsonName = "urls.json";
-  var indexPath = "browse/index.jim";
+  //var indexPath = "browse/index.jim";
+
+  var indexPath = "/browse/index.jim?dir=/media/My%20Video/aaa_server";
 
   var currentJsonUrlObj;
   var mediaList;
@@ -169,6 +171,7 @@ var DownloadViewController = DownloadViewController || function(){
           //var dlnaUrl = "http://192.168.1.69/browse/download.jim?file="+file+"&base=192.168.1.69";
 
           var fileUrl = App.serverUrl+'browse/file.jim?file=' + file+ '&type=' + type;
+          console.log( 'fileUrl = '+fileUrl);
 
           request(fileUrl, function (error, response, data) {
             if (!error && response.statusCode == 200) {
@@ -177,8 +180,8 @@ var DownloadViewController = DownloadViewController || function(){
               var fileInfoHTMLBody = fileInfoHTML.body;
 
               var dlnaUrl = fileInfoHTMLBody.querySelector('a').href;
-              var title = decodeURI(((fileInfoHTMLBody.querySelector('.bmp.va')).getAttribute('src')).split('/')[3]);
-              //console.log( title);
+              var title = decodeURI(((fileInfoHTMLBody.querySelector('.bmp.va')).getAttribute('src')).split('/')[4]);
+              //console.log( 'Title = '+title);
               //console.log(dlnaUrl);
 
               var desc = "";
@@ -233,7 +236,7 @@ var DownloadViewController = DownloadViewController || function(){
     console.log("noOfMediaFilesDownloaded ",noOfMediaFilesDownloaded);
     console.log("totalMediaFilesToDownload ",totalMediaFilesToDownload);
 
-    var movieToGet;
+    //var movieToGet;
 
     for(var i=0; i<filesToDownloadArray.length; i++){
       var mediaElement = document.createElement('li');
@@ -241,9 +244,9 @@ var DownloadViewController = DownloadViewController || function(){
 
       var fileName = filesToDownloadArray[i].title;
 
-      if(fileName.indexOf("Drive") != -1){
-        movieToGet = i;
-      }
+      // if(fileName.indexOf("Drive") != -1){
+      //   movieToGet = i;
+      // }
 
       var mediaLabel = document.createElement('p');
       mediaLabel.innerHTML = fileName;
@@ -260,10 +263,10 @@ var DownloadViewController = DownloadViewController || function(){
       mediaList.appendChild(mediaElement);
     }
 
-    //var fileName = filesToDownloadArray[noOfMediaFilesDownloaded].title;
-  //  _startDownloadOfFile(filesToDownloadArray[noOfMediaFilesDownloaded], App.downloadFolder+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
-    var fileName = filesToDownloadArray[movieToGet].title;
-    _startDownloadOfFile(filesToDownloadArray[movieToGet], App.downloadFolder+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
+    var fileName = filesToDownloadArray[noOfMediaFilesDownloaded].title;
+    _startDownloadOfFile(filesToDownloadArray[noOfMediaFilesDownloaded], App.downloadFolder+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
+    //var fileName = filesToDownloadArray[movieToGet].title;
+    //_startDownloadOfFile(filesToDownloadArray[movieToGet], App.downloadFolder+fileName, _onFileDownloadProgress, _onFileDownloaded, _onFileDownloadError);
   };
 
   var _startDownloadOfFile = function(urlObj, targetFilePath, downloadingCallBack, onCompleteCallback, onErrorCallback){
