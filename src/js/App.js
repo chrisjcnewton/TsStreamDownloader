@@ -10,6 +10,7 @@ var App = App || (function(){
 
   var serverUrl = "http://192.168.1.37/";
   var downloadFolder = "/Users/chrisnewton/Movies/";
+
   var mediaFolder = "";
 
   var viewControllerArray = [];
@@ -157,6 +158,7 @@ var App = App || (function(){
   return{
     serverUrl:serverUrl,
     downloadFolder:downloadFolder,
+    mediaFolder:mediaFolder,
     isNetworkConnected:isNetworkConnected,
     startViewController:startViewController,
     getItemFromStorage:getItemFromStorage,

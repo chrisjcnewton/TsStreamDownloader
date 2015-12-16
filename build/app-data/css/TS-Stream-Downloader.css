@@ -147,74 +147,6 @@ progress[value]::-webkit-progress-value {
   background-color: red;
 }
 
-/* line 1, ../../../src/sass/partials/_dialog.scss */
-.dialog {
-  width: 27em;
-  height: 15em;
-  background-color: rgba(255, 255, 255, 0.95);
-  position: absolute;
-  margin: auto;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  font-family: "Frutiger-Light-Cn";
-}
-/* line 13, ../../../src/sass/partials/_dialog.scss */
-.dialog .dialogInner {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100%;
-}
-/* line 21, ../../../src/sass/partials/_dialog.scss */
-.dialog p {
-  font-size: 1.2em;
-  text-align: center;
-  padding-bottom: 1em;
-}
-/* line 29, ../../../src/sass/partials/_dialog.scss */
-.dialog button {
-  min-width: 6em;
-  height: 2.2em;
-  margin: 10px 10px 10px 0;
-  display: none;
-  border: none;
-  background-color: red;
-  color: white;
-  cursor: pointer;
-  font-family: "Frutiger-Light-Cn";
-  font-size: 1em;
-  text-transform: uppercase;
-}
-/* line 43, ../../../src/sass/partials/_dialog.scss */
-.dialog .buttonsBar {
-  margin: 0 auto;
-  display: table;
-}
-/* line 48, ../../../src/sass/partials/_dialog.scss */
-.dialog .progressArea {
-  display: none;
-  padding: 0 1.5em;
-}
-/* line 53, ../../../src/sass/partials/_dialog.scss */
-.dialog .progressArea progress[value], .dialog .progressArea progress:not([value]) {
-  width: 100%;
-}
-/* line 59, ../../../src/sass/partials/_dialog.scss */
-.dialog .progressArea .dialogProgressCopy {
-  margin: 0.5em 0 1em 0;
-}
-/* line 68, ../../../src/sass/partials/_dialog.scss */
-.dialog .isVisible {
-  display: initial;
-}
-/* line 72, ../../../src/sass/partials/_dialog.scss */
-.dialog .progressArea.isVisible {
-  display: block;
-}
-
 /* line 13, ../../../src/sass/partials/_download.scss */
 .downloadView p {
   padding: 1em;
@@ -230,30 +162,43 @@ progress[value]::-webkit-progress-value {
 /* line 28, ../../../src/sass/partials/_download.scss */
 .downloadView button {
   padding: 1em;
-  width: 100%;
+  width: 50%;
   height: 3em;
   font-size: 1em;
   font-weight: bold;
+  float: left;
 }
 /* line 38, ../../../src/sass/partials/_download.scss */
+.downloadView #mediaList {
+  clear: both;
+}
+/* line 40, ../../../src/sass/partials/_download.scss */
 .downloadView #mediaList li {
   background-color: rgba(255, 0, 0, 0.2);
   padding: 1em;
 }
-/* line 42, ../../../src/sass/partials/_download.scss */
+/* line 44, ../../../src/sass/partials/_download.scss */
 .downloadView #mediaList .mediaLabel {
   font-weight: bold;
   padding: 0 0 0.3em 0;
 }
-/* line 50, ../../../src/sass/partials/_download.scss */
+/* line 52, ../../../src/sass/partials/_download.scss */
 .downloadView #mediaList progress {
   width: 100%;
 }
-/* line 54, ../../../src/sass/partials/_download.scss */
+/* line 56, ../../../src/sass/partials/_download.scss */
 .downloadView #mediaList .dlComplete {
+  background-color: rgba(0, 0, 255, 0.2);
+}
+/* line 58, ../../../src/sass/partials/_download.scss */
+.downloadView #mediaList .dlComplete progress[value]::-webkit-progress-value {
+  background-color: blue;
+}
+/* line 63, ../../../src/sass/partials/_download.scss */
+.downloadView #mediaList .convComplete {
   background-color: rgba(0, 255, 0, 0.2);
 }
-/* line 56, ../../../src/sass/partials/_download.scss */
-.downloadView #mediaList .dlComplete progress[value]::-webkit-progress-value {
+/* line 65, ../../../src/sass/partials/_download.scss */
+.downloadView #mediaList .convComplete progress[value]::-webkit-progress-value {
   background-color: green;
 }

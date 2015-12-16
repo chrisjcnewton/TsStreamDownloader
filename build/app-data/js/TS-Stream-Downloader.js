@@ -10,6 +10,7 @@ var App = App || (function(){
 
   var serverUrl = "http://192.168.1.37/";
   var downloadFolder = "/Users/chrisnewton/Movies/";
+
   var mediaFolder = "";
 
   var viewControllerArray = [];
@@ -157,6 +158,7 @@ var App = App || (function(){
   return{
     serverUrl:serverUrl,
     downloadFolder:downloadFolder,
+    mediaFolder:mediaFolder,
     isNetworkConnected:isNetworkConnected,
     startViewController:startViewController,
     getItemFromStorage:getItemFromStorage,
@@ -350,29 +352,17 @@ var FileDownloader = FileDownloader || function(urlObj, targetFilePath, download
 
 };
 
-var UpnpSearch = UpnpSearch || (function(){
-/*
-  var Ssdp = require('upnp-ssdp');
-  var client = Ssdp();
-  client.on('up', function (address) {
-      console.log('server found', address);
-  });
-  client.on('down', function (address) {
-      console.log('server ' + address + ' not responding anymore');
-  });
-  client.on('error', function (err) {
-      console.log('error initiating SSDP search', err);
-  });
-  client.search('device:server');*/
-
-})();
-
-var VideoConverter = VideoConverter || function(sourceVideoPath, targetFilePath, videoOptions, convertingCallBack, onCompleteCallback, onErrorCallback){
+var VideoConverter = VideoConverter || function(sourceVideoPath, targetFilePath, definition, convertingCallBack, onCompleteCallback, onErrorCallback){
 
   var hbjs = require("handbrake-js");
 
-  //hbjs.spawn({ input: sourceVideoPath, output: targetFilePath, preset:"Normal", rate:25}) // Good for HD TS Files
-  hbjs.spawn({ input: sourceVideoPath, output: targetFilePath, preset:"Normal", width:1024, rate:25}) // Good for SD TS Files  
+  var videoOptions = {input: sourceVideoPath, output: targetFilePath, preset:"Normal", rate:25};
+console.log("definition = "+definition);
+  if(definition == "SD"){
+    videoOptions.width = 1024;
+  }
+
+  hbjs.spawn(videoOptions)
     .on("error", function(err){
       // invalid user input, no video found etc
       onErrorCallback(err);
@@ -403,9 +393,9 @@ var DownloadViewController = DownloadViewController || function(){
   var appDataPath = gui.App.dataPath + "/";
   //var cwd = process.cwd();
   var urlJsonName = "urls.json";
-  //var indexPath = "browse/index.jim";
 
   var indexPath = "/browse/index.jim?dir=/media/My%20Video/aaa_server";
+  //var indexPath = "/Workspace/TS-Server/aaa_server_page.html";
 
   var currentJsonUrlObj;
   var mediaList;
@@ -414,6 +404,10 @@ var DownloadViewController = DownloadViewController || function(){
   var filesToDownloadArray;
   var totalNoOfFilesToTranscode = 0;
   var noOfFilesTranscoded = 0;
+  var filesToTranscodeObj;
+  var startButton;
+  var startScanTimeout;
+  var scanInterval = 3000;
 
   var create = function(extras){
     previousViewControllerName = extras? extras.previousViewControllerName : null;
@@ -423,22 +417,30 @@ var DownloadViewController = DownloadViewController || function(){
     var ipAddressInput = document.querySelector('#ipAddress');
     var tsFolderInput = document.querySelector('#tsFolderLocation');
     var mp4FolderInput = document.querySelector('#mp4FolderLocation');
-    var startButton = document.querySelector('#startButton');
+    var stopButton = document.querySelector('#stopButton');
+    startButton = document.querySelector('#startButton');
 
     ipAddressInput.value = localStorage.getItem('ipaddress');
     tsFolderInput.value = localStorage.getItem('tsFolderPath');
     mp4FolderInput.value = localStorage.getItem('mp4FolderPath');
 
+    stopButton.addEventListener('click',function(){
+      clearTimeout(startScanTimeout);
+      startButton.disabled = false;
+    },false);
+
 
     startButton.addEventListener('click', function(){
+      startButton.disabled = true;
       localStorage.setItem('ipaddress', ipAddressInput.value);
       localStorage.setItem('tsFolderPath', tsFolderInput.value);
       localStorage.setItem('mp4FolderPath', mp4FolderInput.value);
 
       App.serverUrl = ipAddressInput.value;
       App.downloadFolder = tsFolderInput.value;
+      App.mediaFolder = mp4FolderInput.value;
       console.log('BOOM');
-      _getCurrentUrls();
+      _startScanning();
 
       //_convertVideo(App.downloadFolder+'01.ts', App.downloadFolder+'01.mp4');
 
@@ -446,7 +448,7 @@ var DownloadViewController = DownloadViewController || function(){
   };
 
 
-  var _getCurrentUrls = function(){
+  var _startScanning = function(){
     App.readJsonFromDisk(appDataPath + urlJsonName, function(error, jsonObj){
       if(error){
         console.log(error.status);
@@ -461,7 +463,6 @@ var DownloadViewController = DownloadViewController || function(){
 
         _getDlnaUrls(function(error, remoteJsonUrlObj){
           if(!error){
-
             if(currentJsonUrlObj){
               var localUrlArr = currentJsonUrlObj.urls;
               var remoteUrlArr = remoteJsonUrlObj.urls;
@@ -470,15 +471,17 @@ var DownloadViewController = DownloadViewController || function(){
                 if(downloadArray.length == 0 && deleteArray.length == 0){
                   console.log("No Changes on Server");
                   mediaList.innerHTML = "No Changes on Server";
+                  startScanTimeout = setTimeout(_startScanning, scanInterval); // Wait for scanInterval then scan again
                 }
                 else{
                   if(deleteArray.length > 0){
                     console.log("deleteArray = ",deleteArray);
                     // Delete some files
                     for(var i=0; i< deleteArray.length; i++){
-                      var fileName = deleteArray[i].mediaurl.split('/')[4];
+                      var fileName = deleteArray[i].mediaurl.split('/')[6];
                       try{
-                        fs.unlinkSync(appDataPath + fileName);
+                        //fs.unlinkSync(appDataPath + fileName);
+                        fs.unlinkSync( deleteArray[i].localFile );
                         _deleteFromArray(currentJsonUrlObj.urls, deleteArray[i].mediaurl);
                       }catch(e){
                         _deleteFromArray(currentJsonUrlObj.urls, deleteArray[i].mediaurl);
@@ -486,10 +489,14 @@ var DownloadViewController = DownloadViewController || function(){
                       }
                     }
                     _writeJsonToDisk(currentJsonUrlObj);
+                    startScanTimeout = setTimeout(_startScanning, scanInterval); // Wait for scanInterval then scan again
                   }
                   if(downloadArray.length > 0){
                     totalMediaFilesToDownload = downloadArray.length;
                     filesToDownloadArray = downloadArray;
+                    noOfMediaFilesDownloaded = 0;
+                    noOfFilesTranscoded = 0;
+                    filesToTranscodeObj = null;
                     _downloadMediaFiles();
                   }
                 }
@@ -499,6 +506,9 @@ var DownloadViewController = DownloadViewController || function(){
               // First run so download everything
               totalMediaFilesToDownload = remoteJsonUrlObj.urls.length;
               filesToDownloadArray = remoteJsonUrlObj.urls;
+              noOfMediaFilesDownloaded = 0;
+              noOfFilesTranscoded = 0;
+              filesToTranscodeObj = null;
               _downloadMediaFiles();
 
 
@@ -529,6 +539,16 @@ var DownloadViewController = DownloadViewController || function(){
 
 
   var _getDlnaUrls = function(callback){
+
+    // ******* For Testing
+    request("http://localhost:8888/Workspace/TS-Server/humax.json", function (error, response, data) {
+      var jsonObj = JSON.parse(response.body);
+      callback(null, jsonObj);
+    });
+
+    return;
+    // ***** end For Testing
+
     console.log(App.serverUrl+indexPath);
     request(App.serverUrl+indexPath, function (error, response, data) {
 
@@ -702,7 +722,16 @@ var DownloadViewController = DownloadViewController || function(){
         currentJsonUrlObj = {};
         currentJsonUrlObj.urls = [];
       }
-      currentJsonUrlObj.urls.push( {"mediaurl":urlObj.mediaurl,"title":urlObj.title,"desc":urlObj.desc, "localFile":urlObj.targetPath} );
+
+      if(!filesToTranscodeObj){
+        filesToTranscodeObj = {};
+        filesToTranscodeObj.urls = [];
+      }
+
+      //if(message !== "File already Downloaded"){
+        currentJsonUrlObj.urls.push( {"mediaurl":urlObj.mediaurl,"title":urlObj.title,"desc":urlObj.desc, "localFile":urlObj.targetPath, "definition":urlObj.definition} );
+        filesToTranscodeObj.urls.push( {"mediaurl":urlObj.mediaurl,"title":urlObj.title,"desc":urlObj.desc, "localFile":urlObj.targetPath, "definition":urlObj.definition} );
+      //}
       _writeJsonToDisk(currentJsonUrlObj);
       noOfMediaFilesDownloaded++;
 
@@ -714,11 +743,14 @@ var DownloadViewController = DownloadViewController || function(){
         }
       }
 
-      //if(noOfMediaFilesDownloaded === totalMediaFilesToDownload){
-      if(noOfMediaFilesDownloaded === 1){
+      //if(noOfMediaFilesDownloaded === 1){
+      if(noOfMediaFilesDownloaded === totalMediaFilesToDownload){
         // Start transcoding the files
-        totalNoOfFilesToTranscode = currentJsonUrlObj.urls.length;
-        _convertVideo(currentJsonUrlObj.urls[noOfFilesTranscoded].localFile, currentJsonUrlObj.urls[noOfFilesTranscoded].localFile+".mp4");
+        totalNoOfFilesToTranscode = filesToTranscodeObj.urls.length;
+
+        //console.log("currentJsonUrlObj.urls[noOfFilesTranscoded].definition = "+currentJsonUrlObj.urls[noOfFilesTranscoded].definition);
+
+        _convertVideo(filesToTranscodeObj.urls[noOfFilesTranscoded].localFile, App.mediaFolder+filesToTranscodeObj.urls[noOfFilesTranscoded].title+".mp4", filesToTranscodeObj.urls[noOfFilesTranscoded].definition);
 
       }else{
         var fileName = filesToDownloadArray[noOfMediaFilesDownloaded].title;
@@ -747,15 +779,17 @@ var DownloadViewController = DownloadViewController || function(){
     var deleteIssuesArr = localIssues.slice(0);
     var addIssuesArr = remoteIssues.slice(0);
 
-
-
 		for(var i=0; i< largerArray.length; i++){
 			for(var j=0; j < smallerArray.length; j++){
 
 				var localIssue = largerArray[i];
 				var remoteIssue = smallerArray[j];
 
+
+
 				if(localIssue.mediaurl === remoteIssue.mediaurl){
+          console.log("match = ",localIssue.mediaurl);
+
           _deleteFromArray(deleteIssuesArr,localIssue.mediaurl);
           _deleteFromArray(addIssuesArr,localIssue.mediaurl);
 					break;
@@ -778,25 +812,40 @@ var DownloadViewController = DownloadViewController || function(){
   };
 
 
-  var _convertVideo = function(srcFile, destFile){
-    new VideoConverter(srcFile, destFile, null, _onConvertProgress, _onConvertComplete, _onConvertError);
+  var _convertVideo = function(srcFile, destFile, definition){
+    new VideoConverter(srcFile, destFile, definition, _onConvertProgress, _onConvertComplete, _onConvertError);
   };
 
   var _onConvertError = function(error){
     console.log("error = "+error);
   };
   var _onConvertProgress = function(progress){
-    console.log("converting file = "+progress.percentComplete+"  "+progress.eta);
+    var mediaTitle = filesToTranscodeObj.urls[noOfFilesTranscoded].title;
+    for(var i=0; i<mediaList.children.length; i++){
+      if(mediaList.children[i].urlObj.title === mediaTitle){
+        mediaList.children[i].children[1].innerHTML = "Converting to mp4:  "+Math.floor(progress.percentComplete)+"%, ETA: "+progress.eta;
+        mediaList.children[i].children[2].value = progress.percentComplete;
+      }
+    }
+    //console.log("converting file = "+progress.percentComplete+"  "+progress.eta);
 
   };
   var _onConvertComplete = function(){
     console.log("conversion Complete");
+    var mediaTitle = filesToTranscodeObj.urls[noOfFilesTranscoded].title;
+    for(var i=0; i<mediaList.children.length; i++){
+      if(mediaList.children[i].urlObj.title === mediaTitle){
+        mediaList.children[i].classList.add('convComplete');
+        mediaList.children[i].children[1].innerHTML = "File Downloaded & Converted";
+      }
+    }
     noOfFilesTranscoded++;
-    if(noOfFilesTranscoded == 1){
-    //if(noOfFilesTranscoded == totalNoOfFilesToTranscode){
+    if(noOfFilesTranscoded == totalNoOfFilesToTranscode){
       // FInished
+      console.log("----~ ALL conversions Complete ~-----");
+      startScanTimeout = setTimeout(_startScanning, scanInterval); // Wait for scanInterval then scan again
     }else{
-      _convertVideo(currentJsonUrlObj.urls[noOfFilesTranscoded].localFile, currentJsonUrlObj.urls[noOfFilesTranscoded].localFile+".mp4");
+      _convertVideo(filesToTranscodeObj.urls[noOfFilesTranscoded].localFile, App.mediaFolder+filesToTranscodeObj.urls[noOfFilesTranscoded].title+".mp4", filesToTranscodeObj.urls[noOfFilesTranscoded].definition);
     }
   };
 
@@ -833,133 +882,4 @@ var ViewController = ViewController || function(){
     create:create,
     destroy:destroy
   };
-};
-
-var Dialog = Dialog || function(copy, options, callback, pauseCallback){
-
-  var confirmCopy = (options && options.confirmCopy)? options.confirmCopy : "OK";
-  var showConfirm  = (options && options.showConfirm != undefined)? options.showConfirm : true;
-  var cancelCopy  = (options && options.cancelCopy)? options.cancelCopy : "Cancel";
-  var showCancel  = (options && options.showCancel != undefined)? options.showCancel : false;
-  var progressCopy  = (options && options.progressCopy)? options.progressCopy : "0%";
-  var showProgress  = (options && options.showProgress != undefined)? options.showProgress : false;
-
-
-
-  var dialog = document.createElement('div');
-  dialog.setAttribute('class', 'dialog');
-
-  var dialogInner = document.createElement('div');
-  dialogInner.setAttribute('class', 'dialogInner');
-
-  var dialogCopy = document.createElement('p');
-  dialogCopy.innerHTML = copy;
-
-  var buttonsBar = document.createElement('div');
-  buttonsBar.setAttribute('class', 'buttonsBar');
-
-  var cancelButton = document.createElement('button');
-  cancelButton.addEventListener('click', onButtonClicked, false);
-  cancelButton.innerHTML = cancelCopy;
-  cancelButton.id = "cancel";
-  buttonsBar.appendChild(cancelButton);
-  if (showCancel) cancelButton.classList.add('isVisible');
-
-  var confirmButton = document.createElement('button');
-  confirmButton.id = "confirm";
-  confirmButton.innerHTML = confirmCopy;
-  confirmButton.addEventListener('click', onButtonClicked, false);
-  buttonsBar.appendChild(confirmButton);
-  if (showConfirm) confirmButton.classList.add('isVisible');
-
-  var progressArea = document.createElement('div');
-  progressArea.setAttribute('class', 'progressArea');
-  var progressCopyDiv = document.createElement('div');
-  progressCopyDiv.setAttribute('class', 'dialogProgressCopy');
-  progressCopyDiv.innerHTML = progressCopy;
-  var progressBar = document.createElement('progress');
-  progressBar.setAttribute('class', 'dialogProgress');
-  progressBar.setAttribute('max', '100');
-  progressBar.setAttribute('value', '0');
-
-  var progressResumePauseButton = document.createElement('button');
-  progressResumePauseButton.setAttribute('class', 'progressResumePauseButton');
-  progressResumePauseButton.innerHTML = "Pause";
-  progressResumePauseButton.addEventListener('click', onResumePauseClicked, false);
-
-  progressArea.appendChild(progressBar);
-  progressArea.appendChild(progressCopyDiv);
-  progressArea.appendChild(progressResumePauseButton);
-
-  if(showProgress) progressArea.classList.add('isVisible');
-
-  dialogInner.appendChild(dialogCopy);
-  dialogInner.appendChild(progressArea);
-  dialogInner.appendChild(buttonsBar);
-  dialog.appendChild(dialogInner);
-
-  document.body.appendChild(dialog);
-
-
-  function onButtonClicked(e){
-    if(e.target.id === "confirm"){
-      callback(true);
-    }else if(e.target.id === "cancel"){
-      callback(false);
-    }
-
-  }
-
-  function onResumePauseClicked(e){
-    if (e.target.innerHTML === "Pause"){
-      e.target.innerHTML = "Resume";
-      pauseCallback(true);
-    }else{
-      e.target.innerHTML = "Pause";
-      pauseCallback(false);
-    }
-  }
-
-  function onProgressChange(newValue){
-    if(newValue === "indeterminate"){
-      progressBar.removeAttribute('value');
-    }else{
-      if(!progressBar.value) progressBar.setAttribute('value', newValue);
-      if(!isNaN(newValue))progressBar.value = newValue;
-    }
-  }
-
-  function onProgressMessageChange(newCopy){
-    progressCopyDiv.innerHTML = newCopy;
-  }
-
-  function onMessageChange(newCopy){
-    dialogCopy.innerHTML = newCopy;
-  }
-  function onToggleElement(elem){
-    if(elem.classList.contains('isVisible')){
-      elem.classList.remove('isVisible');
-    }else{
-      elem.classList.add('isVisible');
-    }
-  }
-
-  function onHide(){
-    document.body.removeChild(dialog);
-  }
-
-  return{
-    updateProgress: onProgressChange,
-    updateProgressMessage: onProgressMessageChange,
-    updateMessage: onMessageChange,
-    toggleResumePauseButton: function(){onToggleElement(progressResumePauseButton)},
-    toggleConfirmButton: function(){onToggleElement(confirmButton)},
-    toggleCancelButton: function(){onToggleElement(cancelButton)},
-    toggleProgress: function(){onToggleElement(progressArea);onToggleElement(progressResumePauseButton);},
-    updateConfirmCopy: function(newCopy){confirmButton.innerHTML = newCopy;},
-    updateCancelCopy: function(newCopy){cancelButton.innerHTML = newCopy;},
-    hide:onHide
-  }
-
-
 };

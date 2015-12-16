@@ -27,14 +27,16 @@
 
   button{
     padding:1em;
-    width:100%;
+    width:50%;
     height:3em;
     font-size:1em;
     font-weight:bold;
+    float: left;
   }
 
 
   #mediaList{
+    clear:both;
     li{
       background-color:rgba(255,0,0,0.2);
       padding:1em;
@@ -52,6 +54,13 @@
     }
 
     .dlComplete{
+      background-color:rgba(0,0,255,0.2);
+      progress[value]::-webkit-progress-value {
+        background-color:blue;
+      }
+    }
+
+    .convComplete{
       background-color:rgba(0,255,0,0.2);
       progress[value]::-webkit-progress-value {
         background-color:green;

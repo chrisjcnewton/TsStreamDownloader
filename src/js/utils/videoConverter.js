@@ -1,9 +1,14 @@
-var VideoConverter = VideoConverter || function(sourceVideoPath, targetFilePath, videoOptions, convertingCallBack, onCompleteCallback, onErrorCallback){
+var VideoConverter = VideoConverter || function(sourceVideoPath, targetFilePath, definition, convertingCallBack, onCompleteCallback, onErrorCallback){
 
   var hbjs = require("handbrake-js");
 
-  //hbjs.spawn({ input: sourceVideoPath, output: targetFilePath, preset:"Normal", rate:25}) // Good for HD TS Files
-  hbjs.spawn({ input: sourceVideoPath, output: targetFilePath, preset:"Normal", width:1024, rate:25}) // Good for SD TS Files  
+  var videoOptions = {input: sourceVideoPath, output: targetFilePath, preset:"Normal", rate:25};
+console.log("definition = "+definition);
+  if(definition == "SD"){
+    videoOptions.width = 1024;
+  }
+
+  hbjs.spawn(videoOptions)
     .on("error", function(err){
       // invalid user input, no video found etc
       onErrorCallback(err);

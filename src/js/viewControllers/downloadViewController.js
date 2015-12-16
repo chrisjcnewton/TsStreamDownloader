@@ -11,9 +11,9 @@ var DownloadViewController = DownloadViewController || function(){
   var appDataPath = gui.App.dataPath + "/";
   //var cwd = process.cwd();
   var urlJsonName = "urls.json";
-  //var indexPath = "browse/index.jim";
 
   var indexPath = "/browse/index.jim?dir=/media/My%20Video/aaa_server";
+  //var indexPath = "/Workspace/TS-Server/aaa_server_page.html";
 
   var currentJsonUrlObj;
   var mediaList;
@@ -22,6 +22,10 @@ var DownloadViewController = DownloadViewController || function(){
   var filesToDownloadArray;
   var totalNoOfFilesToTranscode = 0;
   var noOfFilesTranscoded = 0;
+  var filesToTranscodeObj;
+  var startButton;
+  var startScanTimeout;
+  var scanInterval = 3000;
 
   var create = function(extras){
     previousViewControllerName = extras? extras.previousViewControllerName : null;
@@ -31,22 +35,30 @@ var DownloadViewController = DownloadViewController || function(){
     var ipAddressInput = document.querySelector('#ipAddress');
     var tsFolderInput = document.querySelector('#tsFolderLocation');
     var mp4FolderInput = document.querySelector('#mp4FolderLocation');
-    var startButton = document.querySelector('#startButton');
+    var stopButton = document.querySelector('#stopButton');
+    startButton = document.querySelector('#startButton');
 
     ipAddressInput.value = localStorage.getItem('ipaddress');
     tsFolderInput.value = localStorage.getItem('tsFolderPath');
     mp4FolderInput.value = localStorage.getItem('mp4FolderPath');
 
+    stopButton.addEventListener('click',function(){
+      clearTimeout(startScanTimeout);
+      startButton.disabled = false;
+    },false);
+
 
     startButton.addEventListener('click', function(){
+      startButton.disabled = true;
       localStorage.setItem('ipaddress', ipAddressInput.value);
       localStorage.setItem('tsFolderPath', tsFolderInput.value);
       localStorage.setItem('mp4FolderPath', mp4FolderInput.value);
 
       App.serverUrl = ipAddressInput.value;
       App.downloadFolder = tsFolderInput.value;
+      App.mediaFolder = mp4FolderInput.value;
       console.log('BOOM');
-      _getCurrentUrls();
+      _startScanning();
 
       //_convertVideo(App.downloadFolder+'01.ts', App.downloadFolder+'01.mp4');
 
@@ -54,7 +66,7 @@ var DownloadViewController = DownloadViewController || function(){
   };
 
 
-  var _getCurrentUrls = function(){
+  var _startScanning = function(){
     App.readJsonFromDisk(appDataPath + urlJsonName, function(error, jsonObj){
       if(error){
         console.log(error.status);
@@ -69,7 +81,6 @@ var DownloadViewController = DownloadViewController || function(){
 
         _getDlnaUrls(function(error, remoteJsonUrlObj){
           if(!error){
-
             if(currentJsonUrlObj){
               var localUrlArr = currentJsonUrlObj.urls;
               var remoteUrlArr = remoteJsonUrlObj.urls;
@@ -78,15 +89,17 @@ var DownloadViewController = DownloadViewController || function(){
                 if(downloadArray.length == 0 && deleteArray.length == 0){
                   console.log("No Changes on Server");
                   mediaList.innerHTML = "No Changes on Server";
+                  startScanTimeout = setTimeout(_startScanning, scanInterval); // Wait for scanInterval then scan again
                 }
                 else{
                   if(deleteArray.length > 0){
                     console.log("deleteArray = ",deleteArray);
                     // Delete some files
                     for(var i=0; i< deleteArray.length; i++){
-                      var fileName = deleteArray[i].mediaurl.split('/')[4];
+                      var fileName = deleteArray[i].mediaurl.split('/')[6];
                       try{
-                        fs.unlinkSync(appDataPath + fileName);
+                        //fs.unlinkSync(appDataPath + fileName);
+                        fs.unlinkSync( deleteArray[i].localFile );
                         _deleteFromArray(currentJsonUrlObj.urls, deleteArray[i].mediaurl);
                       }catch(e){
                         _deleteFromArray(currentJsonUrlObj.urls, deleteArray[i].mediaurl);
@@ -94,10 +107,14 @@ var DownloadViewController = DownloadViewController || function(){
                       }
                     }
                     _writeJsonToDisk(currentJsonUrlObj);
+                    startScanTimeout = setTimeout(_startScanning, scanInterval); // Wait for scanInterval then scan again
                   }
                   if(downloadArray.length > 0){
                     totalMediaFilesToDownload = downloadArray.length;
                     filesToDownloadArray = downloadArray;
+                    noOfMediaFilesDownloaded = 0;
+                    noOfFilesTranscoded = 0;
+                    filesToTranscodeObj = null;
                     _downloadMediaFiles();
                   }
                 }
@@ -107,6 +124,9 @@ var DownloadViewController = DownloadViewController || function(){
               // First run so download everything
               totalMediaFilesToDownload = remoteJsonUrlObj.urls.length;
               filesToDownloadArray = remoteJsonUrlObj.urls;
+              noOfMediaFilesDownloaded = 0;
+              noOfFilesTranscoded = 0;
+              filesToTranscodeObj = null;
               _downloadMediaFiles();
 
 
@@ -137,6 +157,16 @@ var DownloadViewController = DownloadViewController || function(){
 
 
   var _getDlnaUrls = function(callback){
+
+    // ******* For Testing
+    request("http://localhost:8888/Workspace/TS-Server/humax.json", function (error, response, data) {
+      var jsonObj = JSON.parse(response.body);
+      callback(null, jsonObj);
+    });
+
+    return;
+    // ***** end For Testing
+
     console.log(App.serverUrl+indexPath);
     request(App.serverUrl+indexPath, function (error, response, data) {
 
@@ -310,7 +340,16 @@ var DownloadViewController = DownloadViewController || function(){
         currentJsonUrlObj = {};
         currentJsonUrlObj.urls = [];
       }
-      currentJsonUrlObj.urls.push( {"mediaurl":urlObj.mediaurl,"title":urlObj.title,"desc":urlObj.desc, "localFile":urlObj.targetPath} );
+
+      if(!filesToTranscodeObj){
+        filesToTranscodeObj = {};
+        filesToTranscodeObj.urls = [];
+      }
+
+      //if(message !== "File already Downloaded"){
+        currentJsonUrlObj.urls.push( {"mediaurl":urlObj.mediaurl,"title":urlObj.title,"desc":urlObj.desc, "localFile":urlObj.targetPath, "definition":urlObj.definition} );
+        filesToTranscodeObj.urls.push( {"mediaurl":urlObj.mediaurl,"title":urlObj.title,"desc":urlObj.desc, "localFile":urlObj.targetPath, "definition":urlObj.definition} );
+      //}
       _writeJsonToDisk(currentJsonUrlObj);
       noOfMediaFilesDownloaded++;
 
@@ -322,11 +361,14 @@ var DownloadViewController = DownloadViewController || function(){
         }
       }
 
-      //if(noOfMediaFilesDownloaded === totalMediaFilesToDownload){
-      if(noOfMediaFilesDownloaded === 1){
+      //if(noOfMediaFilesDownloaded === 1){
+      if(noOfMediaFilesDownloaded === totalMediaFilesToDownload){
         // Start transcoding the files
-        totalNoOfFilesToTranscode = currentJsonUrlObj.urls.length;
-        _convertVideo(currentJsonUrlObj.urls[noOfFilesTranscoded].localFile, currentJsonUrlObj.urls[noOfFilesTranscoded].localFile+".mp4");
+        totalNoOfFilesToTranscode = filesToTranscodeObj.urls.length;
+
+        //console.log("currentJsonUrlObj.urls[noOfFilesTranscoded].definition = "+currentJsonUrlObj.urls[noOfFilesTranscoded].definition);
+
+        _convertVideo(filesToTranscodeObj.urls[noOfFilesTranscoded].localFile, App.mediaFolder+filesToTranscodeObj.urls[noOfFilesTranscoded].title+".mp4", filesToTranscodeObj.urls[noOfFilesTranscoded].definition);
 
       }else{
         var fileName = filesToDownloadArray[noOfMediaFilesDownloaded].title;
@@ -355,15 +397,17 @@ var DownloadViewController = DownloadViewController || function(){
     var deleteIssuesArr = localIssues.slice(0);
     var addIssuesArr = remoteIssues.slice(0);
 
-
-
 		for(var i=0; i< largerArray.length; i++){
 			for(var j=0; j < smallerArray.length; j++){
 
 				var localIssue = largerArray[i];
 				var remoteIssue = smallerArray[j];
 
+
+
 				if(localIssue.mediaurl === remoteIssue.mediaurl){
+          console.log("match = ",localIssue.mediaurl);
+
           _deleteFromArray(deleteIssuesArr,localIssue.mediaurl);
           _deleteFromArray(addIssuesArr,localIssue.mediaurl);
 					break;
@@ -386,25 +430,40 @@ var DownloadViewController = DownloadViewController || function(){
   };
 
 
-  var _convertVideo = function(srcFile, destFile){
-    new VideoConverter(srcFile, destFile, null, _onConvertProgress, _onConvertComplete, _onConvertError);
+  var _convertVideo = function(srcFile, destFile, definition){
+    new VideoConverter(srcFile, destFile, definition, _onConvertProgress, _onConvertComplete, _onConvertError);
   };
 
   var _onConvertError = function(error){
     console.log("error = "+error);
   };
   var _onConvertProgress = function(progress){
-    console.log("converting file = "+progress.percentComplete+"  "+progress.eta);
+    var mediaTitle = filesToTranscodeObj.urls[noOfFilesTranscoded].title;
+    for(var i=0; i<mediaList.children.length; i++){
+      if(mediaList.children[i].urlObj.title === mediaTitle){
+        mediaList.children[i].children[1].innerHTML = "Converting to mp4:  "+Math.floor(progress.percentComplete)+"%, ETA: "+progress.eta;
+        mediaList.children[i].children[2].value = progress.percentComplete;
+      }
+    }
+    //console.log("converting file = "+progress.percentComplete+"  "+progress.eta);
 
   };
   var _onConvertComplete = function(){
     console.log("conversion Complete");
+    var mediaTitle = filesToTranscodeObj.urls[noOfFilesTranscoded].title;
+    for(var i=0; i<mediaList.children.length; i++){
+      if(mediaList.children[i].urlObj.title === mediaTitle){
+        mediaList.children[i].classList.add('convComplete');
+        mediaList.children[i].children[1].innerHTML = "File Downloaded & Converted";
+      }
+    }
     noOfFilesTranscoded++;
-    if(noOfFilesTranscoded == 1){
-    //if(noOfFilesTranscoded == totalNoOfFilesToTranscode){
+    if(noOfFilesTranscoded == totalNoOfFilesToTranscode){
       // FInished
+      console.log("----~ ALL conversions Complete ~-----");
+      startScanTimeout = setTimeout(_startScanning, scanInterval); // Wait for scanInterval then scan again
     }else{
-      _convertVideo(currentJsonUrlObj.urls[noOfFilesTranscoded].localFile, currentJsonUrlObj.urls[noOfFilesTranscoded].localFile+".mp4");
+      _convertVideo(filesToTranscodeObj.urls[noOfFilesTranscoded].localFile, App.mediaFolder+filesToTranscodeObj.urls[noOfFilesTranscoded].title+".mp4", filesToTranscodeObj.urls[noOfFilesTranscoded].definition);
     }
   };
 

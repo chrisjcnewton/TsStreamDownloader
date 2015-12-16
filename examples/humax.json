@@ -1,0 +1,23 @@
+{
+    "urls": [
+        {
+            "mediaurl": "http://localhost:8888/Workspace/TS-Server/Files/001.mp4",
+            "title": "Movie 01",
+            "desc": "A desc for Movie 01",
+            "definition": "SD"
+        },
+        
+        {
+            "mediaurl": "http://localhost:8888/Workspace/TS-Server/Files/003.mp4",
+            "title": "Movie 03",
+            "desc": "A desc for Movie 03",
+            "definition": "SD"
+        },
+        {
+            "mediaurl": "http://localhost:8888/Workspace/TS-Server/Files/004.mp4",
+            "title": "Movie 04",
+            "desc": "A desc for Movie 04",
+            "definition": "SD"
+        }
+    ]
+}
