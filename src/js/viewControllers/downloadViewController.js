@@ -26,6 +26,7 @@ var DownloadViewController = DownloadViewController || function(){
   var startButton;
   var startScanTimeout;
   var scanInterval = 3000;
+  var scanStarted = false;
 
   var create = function(extras){
     previousViewControllerName = extras? extras.previousViewControllerName : null;
@@ -49,6 +50,7 @@ var DownloadViewController = DownloadViewController || function(){
 
 
     startButton.addEventListener('click', function(){
+
       startButton.disabled = true;
       localStorage.setItem('ipaddress', ipAddressInput.value);
       localStorage.setItem('tsFolderPath', tsFolderInput.value);
@@ -57,7 +59,8 @@ var DownloadViewController = DownloadViewController || function(){
       App.serverUrl = ipAddressInput.value;
       App.downloadFolder = tsFolderInput.value;
       App.mediaFolder = mp4FolderInput.value;
-      console.log('BOOM');
+
+
       _startScanning();
 
       //_convertVideo(App.downloadFolder+'01.ts', App.downloadFolder+'01.mp4');
@@ -67,6 +70,7 @@ var DownloadViewController = DownloadViewController || function(){
 
 
   var _startScanning = function(){
+    
     App.readJsonFromDisk(appDataPath + urlJsonName, function(error, jsonObj){
       if(error){
         console.log(error.status);
@@ -89,7 +93,7 @@ var DownloadViewController = DownloadViewController || function(){
                 if(downloadArray.length == 0 && deleteArray.length == 0){
                   console.log("No Changes on Server");
                   mediaList.innerHTML = "No Changes on Server";
-                  startScanTimeout = setTimeout(_startScanning, scanInterval); // Wait for scanInterval then scan again
+                  if(startButton.disabled)startScanTimeout = setTimeout(_startScanning, scanInterval); // Wait for scanInterval then scan again
                 }
                 else{
                   if(deleteArray.length > 0){
@@ -107,7 +111,7 @@ var DownloadViewController = DownloadViewController || function(){
                       }
                     }
                     _writeJsonToDisk(currentJsonUrlObj);
-                    startScanTimeout = setTimeout(_startScanning, scanInterval); // Wait for scanInterval then scan again
+                    if(startButton.disabled)startScanTimeout = setTimeout(_startScanning, scanInterval); // Wait for scanInterval then scan again
                   }
                   if(downloadArray.length > 0){
                     totalMediaFilesToDownload = downloadArray.length;
@@ -461,7 +465,7 @@ var DownloadViewController = DownloadViewController || function(){
     if(noOfFilesTranscoded == totalNoOfFilesToTranscode){
       // FInished
       console.log("----~ ALL conversions Complete ~-----");
-      startScanTimeout = setTimeout(_startScanning, scanInterval); // Wait for scanInterval then scan again
+      if(startButton.disabled)startScanTimeout = setTimeout(_startScanning, scanInterval); // Wait for scanInterval then scan again
     }else{
       _convertVideo(filesToTranscodeObj.urls[noOfFilesTranscoded].localFile, App.mediaFolder+filesToTranscodeObj.urls[noOfFilesTranscoded].title+".mp4", filesToTranscodeObj.urls[noOfFilesTranscoded].definition);
     }
