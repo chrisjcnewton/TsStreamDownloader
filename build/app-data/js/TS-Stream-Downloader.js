@@ -452,7 +452,7 @@ var DownloadViewController = DownloadViewController || function(){
 
 
   var _startScanning = function(){
-    
+
     App.readJsonFromDisk(appDataPath + urlJsonName, function(error, jsonObj){
       if(error){
         console.log(error.status);
@@ -520,6 +520,8 @@ var DownloadViewController = DownloadViewController || function(){
 
           }else{
             console.log("Error Connecting to Server = "+error);
+            mediaList.innerHTML = "Error Connecting to Server";
+            if(startButton.disabled)startScanTimeout = setTimeout(_startScanning, scanInterval); // Wait for scanInterval then scan again
           }
 
         });
@@ -546,6 +548,10 @@ var DownloadViewController = DownloadViewController || function(){
 
     // ******* For Testing
     request("http://localhost:8888/Workspace/TS-Server/humax.json", function (error, response, data) {
+      if(error){
+        callback(error,null);
+        return;
+      }
       var jsonObj = JSON.parse(response.body);
       callback(null, jsonObj);
     });
