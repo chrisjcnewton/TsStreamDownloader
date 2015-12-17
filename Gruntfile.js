@@ -58,13 +58,31 @@ module.exports = function(grunt) {
       }
     },
     copy: {
-      buildToRelease: {
+      buildToApp: {
         expand : true,
-        src: ['**/*','!app-data/snapshot.bin'],
-        dest: 'release/',
+        src: ['**/*'],
+        dest: 'App Bundle/TS Stream Downloader.app/Contents/Resources/app.nw/',
         cwd: 'build/'
-
       },
+      editAndCopyPackage:{
+        expand : true,
+        src: ['package.json','app-data/index.html'],
+        dest: 'release/',
+        cwd: 'build/',
+        options: {
+          process: function (content, srcpath) {
+            if(srcpath == 'build/package.json'){
+              // Remove the toolbar for the release version
+              var pkg = JSON.parse(content);
+              pkg.window.toolbar = false;
+              return JSON.stringify(pkg);
+            }else{
+              // Update the index.html with the minified js path
+              return content.replace(/DHL-DPP-Desktop-App\.js/gi, "DHL-DPP-Desktop-App.min.js");
+            }
+          }
+        }
+      }
     },
     compass: {                  // Task
       dist: {                   // Target
