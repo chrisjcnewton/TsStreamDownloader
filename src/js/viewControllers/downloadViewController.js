@@ -165,16 +165,16 @@ var DownloadViewController = DownloadViewController || function(){
   var _getDlnaUrls = function(callback){
 
     // ******* For Testing
-    request("http://localhost:8888/Workspace/TS-Server/humax.json", function (error, response, data) {
-      if(error){
-        callback(error,null);
-        return;
-      }
-      var jsonObj = JSON.parse(response.body);
-      callback(null, jsonObj);
-    });
-
-    return;
+    // request("http://localhost:8888/Workspace/TS-Server/humax.json", function (error, response, data) {
+    //   if(error){
+    //     callback(error,null);
+    //     return;
+    //   }
+    //   var jsonObj = JSON.parse(response.body);
+    //   callback(null, jsonObj);
+    // });
+    //
+    // return;
     // ***** end For Testing
 
     console.log(App.serverUrl+indexPath);
