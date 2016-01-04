@@ -548,35 +548,54 @@ var DownloadViewController = DownloadViewController || function(){
   var _getDlnaUrls = function(callback){
 
     // ******* For Testing
-    request("http://localhost:8888/Workspace/TS-Server/humax.json", function (error, response, data) {
-      if(error){
-        callback(error,null);
-        return;
-      }
-      var jsonObj = JSON.parse(response.body);
-      callback(null, jsonObj);
-    });
 
-    return;
+    // request("http://localhost:8888/Workspace/TS-Server/humax.json", function (error, response, data) {
+    //   if(error){
+    //     callback(error,null);
+    //     return;
+    //   }
+    //   var jsonObj = JSON.parse(response.body);
+    //   callback(null, jsonObj);
+    // });
+    // return;
+
     // ***** end For Testing
 
     console.log(App.serverUrl+indexPath);
+    //request("http://localhost:8888/Workspace/Git_repositories/TsStreamDownloader/examples/Test%20HTML/aaa_server_page.html", function (error, response, data) {
     request(App.serverUrl+indexPath, function (error, response, data) {
 
       if (!error && response.statusCode == 200) {
-        console.log(response.body);
+        //console.log(response.body);
 
         var parser = new DOMParser();
         var viewContentHTML = parser.parseFromString(response.body, "text/html");
         var viewContent = viewContentHTML.body;
     //  console.log(viewContent);
-        var dlnaElems = viewContent.querySelectorAll('fieldset.cleft div.va.bf');
-        //console.log(dlnaElems);
+        var dlnaElemsPreCheck = viewContent.querySelectorAll('fieldset.cleft div.va.bf');
+        //console.log("dlnaElemsPreCheck: ",dlnaElemsPreCheck);
+        var dlnaElems = [];
+
+        // Check that the file has been indexed by the DLNA server
+        for(var j=0; j < dlnaElemsPreCheck.length; j++){
+          var symbols = dlnaElemsPreCheck[j].querySelectorAll('img.va');
+          var hasBeenIndexed = false;
+          for(var k=0; k < symbols.length; k++){
+            var title = symbols[k].getAttribute('title');
+            if(title && (title == "Indexed by DLNA Server") ){
+              hasBeenIndexed = true;
+            }
+          }
+          if(hasBeenIndexed){
+            dlnaElems.push(dlnaElemsPreCheck[j]);
+          }
+        }
 
         var dlnaElemsJsonObj = {};
         dlnaElemsJsonObj.urls = [];
 
-      //  console.log(dlnaElems[]);
+        //console.log("dlnaElems",dlnaElems);
+
 
         var totalNoOfLinks = dlnaElems.length;
         var noOfLinksReceived = 0;
@@ -594,7 +613,7 @@ var DownloadViewController = DownloadViewController || function(){
           //var dlnaUrl = "http://192.168.1.69/browse/download.jim?file="+file+"&base=192.168.1.69";
 
           var fileUrl = App.serverUrl+'browse/file.jim?file=' + file+ '&type=' + type;
-          console.log( 'fileUrl = '+fileUrl);
+          //console.log( 'fileUrl = '+fileUrl);
 
           request(fileUrl, function (error, response, data) {
             if (!error && response.statusCode == 200) {
@@ -622,13 +641,14 @@ var DownloadViewController = DownloadViewController || function(){
                 }
               }
 
-              dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaUrl,"title":title,"desc":desc, "definition":definition} );
+              dlnaElemsJsonObj.urls.push( {"mediaurl":dlnaUrl,"title":escape(title),"desc":escape(desc), "definition":definition} );
 
               if(noOfLinksReceived == totalNoOfLinks){
                 callback(null, dlnaElemsJsonObj);
               }
             }
             else if(error){
+              console.log("error connecting to dlna url");
               totalNoOfLinks--;
             }
           });
