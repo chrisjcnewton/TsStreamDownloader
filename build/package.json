@@ -12,7 +12,7 @@
     "icon": "./app-data/knowledge_icon.png",
     "toolbar": true,
     "frame": true,
-    "width": 1280,
+    "width": 600,
     "height": 805,
     "position": "center",
     "min_width": 1,
