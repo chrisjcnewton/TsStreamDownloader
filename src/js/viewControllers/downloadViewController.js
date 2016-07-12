@@ -239,9 +239,11 @@ var DownloadViewController = DownloadViewController || function(){
               var fileInfoHTMLBody = fileInfoHTML.body;
 
               var dlnaUrl = fileInfoHTMLBody.querySelector('a').href;
-              var title = decodeURI(((fileInfoHTMLBody.querySelector('.bmp.va')).getAttribute('src')).split('/')[4]);
-              //console.log( 'Title = '+title);
-              //console.log(dlnaUrl);
+              var titleDom = fileInfoHTMLBody.querySelector('.bmp.va');
+              var title = "";
+              if(titleDom){
+                title = decodeURI(((fileInfoHTMLBody.querySelector('.bmp.va')).getAttribute('src')).split('/')[4]);
+              }
 
               var desc = "";
               var definition = "";
@@ -250,6 +252,9 @@ var DownloadViewController = DownloadViewController || function(){
               var tableHeaders = fileInfoHTMLBody.querySelectorAll('th');
               for(var j=0; j< tableHeaders.length; j++){
                 var tableTitle = tableHeaders[j].innerHTML;
+                if(tableTitle.toLowerCase() == "title"){
+                  title = (title == "")? tableHeaders[j].parentNode.children[1].innerHTML.replace(" ","") : title;
+                }
                 if(tableTitle.toLowerCase() == "synopsis"){
                   desc = tableHeaders[j].parentNode.children[1].innerHTML;
                 }
